@@ -1,31 +1,37 @@
-# 🗺️ Site Map
+# 🗺️ Site Map (Static Structure)
 
-## 🔒 Authentication (Public)
-* `/` - Landing Page (Entry)
-* `/login` - Login Form
-* `/register` - Registration Form
+## 📂 Root (Public)
+* `index.html` - Landing Page
+* `login.html` - Login Form
+* `register.html` - Registration Form
 
-## 🎓 Student Area
-* `/student/dashboard` - **Dashboard** (Tabs: Enrolled, Browse, Wishlist)
-* `/student/courses` - **My Enrolled Courses**
-    * `/student/courses/{id}/learn` - **Course Player** (Video/Content)
-    * `/student/courses/{id}/feedback` - Course Feedback Survey
-    * `/student/courses/{id}/certificate` - Certificate View/Download
-* `/student/catalog` - **Browse Catalog** (Search & Filter)
-    * `/student/catalog/{id}` - Course Details (Preview)
-    * `/student/checkout/{id}` - Payment / Checkout Page
-* `/student/wishlist` - Saved Courses
+## 📂 /student/ Directory
+* `student/dashboard.html` - **Dashboard** (Handles Enrolled, Browse, Wishlist tabs via JS)
+* `student/course_player.html` - **Course Content Player**
+    * *URL Param:* `?courseId=123` (Loads specific course content)
+    * *URL Param:* `?materialId=456` (Optional: Deep link to specific video/lesson)
+* `student/feedback.html` - **Course Feedback**
+    * *URL Param:* `?courseId=123`
+* `student/certificate.html` - **Certificate Display**
+    * *URL Param:* `?courseId=123`
+* `student/course_details.html` - **Course Info (Preview)**
+    * *URL Param:* `?courseId=123`
+* `student/checkout.html` - **Payment Page**
+    * *URL Param:* `?courseId=123`
 
-## 🛡️ Admin Area
-* `/admin/dashboard` - **Admin Dashboard** (Insights & Quick Actions)
-* `/admin/categories` - **Category Management**
-    * `?action=add` - Add Category Popup
-    * `?action=edit&id={id}` - Edit Category Popup
-* `/admin/students` - **Student List**
-    * `/admin/students/{id}` - **Student Profile**
-        * `/admin/students/{id}/progress` - Student Progress Report
-        * `/admin/students/{id}/certificates` - Student Certificates
-* `/admin/courses` - **Course Management**
-    * `/admin/courses/new` - Add New Course Wizard
-    * `/admin/courses/{id}` - Approved Course Details (Edit/Unpublish)
-    * `/admin/courses/approval/{id}` - Draft Course Review (Approve/Reject)
+## 📂 /admin/ Directory
+* `admin/dashboard.html` - **Admin Dashboard**
+* `admin/categories.html` - **Category Management**
+    * *Note:* Add/Edit Popups are handled by JS on this same page.
+* `admin/students.html` - **Student List**
+* `admin/student_details.html` - **Student Profile**
+    * *URL Param:* `?studentId=789`
+* `admin/student_progress.html` - **Specific Student Progress**
+    * *URL Param:* `?studentId=789`
+* `admin/student_certs.html` - **Specific Student Certificates**
+    * *URL Param:* `?studentId=789`
+* `admin/courses.html` - **Course Management List**
+* `admin/course_editor.html` - **Add/Edit Course Page**
+    * *URL Param:* `?mode=new` (For creating a new course)
+    * *URL Param:* `?mode=edit&courseId=123` (For editing existing)
+    * *URL Param:* `?mode=approve&courseId=123` (For reviewing drafts)
