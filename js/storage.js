@@ -1,83 +1,147 @@
+/**
+ * STORAGE.JS - The Single Source of Truth
+ * High-End Validation with Real-Time Anti-Spam Blocklist.
+ */
+
 const DB_KEYS = {
     USERS: 'users',
     COURSES: 'courses',
     CATEGORIES: 'categories',
-    SESSION: 'current_user'
+    SESSION: 'current_user',
+    BLOCKLIST: 'email_blocklist',
+    BLOCKLIST_UPDATED: 'blocklist_timestamp'
 };
 
-// --- VALIDATION SCHEMAS (The Gatekeepers) ---
+// --- CONSTANTS ---
+const BLOCKLIST_URL = "https://raw.githubusercontent.com/disposable-email-domains/disposable-email-domains/master/disposable_email_blocklist.conf";
+const UPDATE_INTERVAL = 7 * 24 * 60 * 60 * 1000; // Update once a week
+
+// Hardcoded Fallback (The most common ones, just in case fetch fails)
+const FALLBACK_BLOCKLIST = [
+    "yopmail.com", "temp-mail.org", "10minutemail.com", "guerrillamail.com", "sharklasers.com",
+    "mailinator.com", "getairmail.com", "tempmail.net", "throwawaymail.com", "dispostable.com"
+];
+
+// --- STRICT PATTERNS ---
+const Patterns = {
+    Name: /^[a-zA-Z\u00C0-\u00FF\s'-]{3,50}$/, // Letters, spaces, hyphens only
+    Email: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+    Password: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/, // 8+ chars, Upper, Lower, Number, Special
+};
+
+// --- VALIDATION SCHEMAS ---
 const Validators = {
     user: (data) => {
-        if (!data.name || typeof data.name !== 'string') return "Invalid Name";
-        if (!data.email || !data.email.includes('@')) return "Invalid Email";
-        if (!data.password || data.password.length < 3) return "Password too short";
-        if (!['student', 'admin'].includes(data.role)) return "Invalid Role";
-        return null; // No errors
+        // 1. Sanitize Strings
+        const cleanName = data.name ? data.name.trim() : "";
+        const cleanEmail = data.email ? data.email.trim().toLowerCase() : "";
+
+        // 2. Syntax Validation
+        if (!Patterns.Name.test(cleanName)) return "Invalid Name. Use letters only (3-50 chars).";
+        if (!Patterns.Email.test(cleanEmail)) return "Invalid Email format.";
+        if (!Patterns.Password.test(data.password)) return "Password too weak. Needs 8+ chars, Uppercase, Lowercase, Number & Symbol.";
+        if (!['student', 'admin'].includes(data.role)) return "Invalid Role.";
+
+        // 3. ANTI-SPAM CHECK (The High-End Part)
+        const domain = cleanEmail.split('@')[1];
+        const blocklist = Serializer.read(DB_KEYS.BLOCKLIST) || FALLBACK_BLOCKLIST;
+        
+        // Check exact match or sub-domain match
+        if (blocklist.includes(domain)) {
+            return `The domain '@${domain}' is not allowed. Please use a real email provider (Gmail, Outlook, Yahoo, etc.).`;
+        }
+
+        return null;
     },
+
     course: (data) => {
-        if (!data.title) return "Course needs a title";
-        if (typeof data.price !== 'number') return "Price must be a number";
-        if (!['draft', 'approved'].includes(data.status)) return "Invalid Status";
-        if (!Array.isArray(data.lessons)) return "Lessons must be an array";
+        if (!data.title || data.title.length < 5) return "Title too short (min 5 chars).";
+        if (typeof data.price !== 'number' || data.price < 0) return "Price must be 0 or higher.";
+        if (!['draft', 'approved'].includes(data.status)) return "Invalid status.";
+        if (!Array.isArray(data.lessons)) return "Lessons must be an array.";
+        
+        // Deep Lesson Check
+        for (let i = 0; i < data.lessons.length; i++) {
+            if (!data.lessons[i].title || data.lessons[i].title.length < 3) return `Lesson ${i+1} title is invalid.`;
+            if (!data.lessons[i].videoUrl) return `Lesson ${i+1} missing video URL.`;
+        }
         return null;
     }
 };
 
-// --- CORE SERIALIZER LOGIC ---
+// --- SERIALIZER ---
 const Serializer = {
-    // Read from Storage (Deserialize)
     read: (key) => {
-        const data = localStorage.getItem(key);
-        return data ? JSON.parse(data) : [];
+        try { return JSON.parse(localStorage.getItem(key)) || null; } 
+        catch (e) { return null; }
     },
-
-    // Write to Storage (Serialize)
     write: (key, data) => {
-        // 1. Verify Data Integrity (Basic check)
-        if (data === undefined || data === null) {
-            console.error(`Attempted to save null data to ${key}`);
-            return false;
-        }
-        // 2. Stringify and Save
-        localStorage.setItem(key, JSON.stringify(data));
-        return true;
+        try { localStorage.setItem(key, JSON.stringify(data)); return true; } 
+        catch (e) { console.error("Write failed", e); return false; }
     }
 };
 
-// --- PUBLIC API (The functions Abdallah and Jo will use) ---
+// --- PUBLIC API ---
 const DB = {
-    // INITIALIZE DB (Run this once on app load)
-    init: () => {
-        if (!localStorage.getItem(DB_KEYS.USERS)) {
-            // Seed initial data if empty
-            Serializer.write(DB_KEYS.USERS, []);
-            Serializer.write(DB_KEYS.COURSES, []);
-            Serializer.write(DB_KEYS.CATEGORIES, []);
-            console.log("Database Initialized with empty tables.");
+    // ASYNC INITIALIZER (Fetches the latest spam list)
+    init: async () => {
+        // 1. Setup Tables
+        if (!Serializer.read(DB_KEYS.USERS)) Serializer.write(DB_KEYS.USERS, []);
+        if (!Serializer.read(DB_KEYS.COURSES)) Serializer.write(DB_KEYS.COURSES, []);
+        if (!Serializer.read(DB_KEYS.CATEGORIES)) Serializer.write(DB_KEYS.CATEGORIES, []);
+
+        // 2. High-End: Fetch Spam Blocklist from GitHub
+        const lastUpdate = parseInt(localStorage.getItem(DB_KEYS.BLOCKLIST_UPDATED) || "0");
+        const now = Date.now();
+
+        // Update if list is missing OR it's been more than 7 days
+        if (!Serializer.read(DB_KEYS.BLOCKLIST) || (now - lastUpdate > UPDATE_INTERVAL)) {
+            console.log("⬇️ Downloading latest Anti-Spam Blocklist...");
+            try {
+                const response = await fetch(BLOCKLIST_URL);
+                if (response.ok) {
+                    const text = await response.text();
+                    // Parse text file (one domain per line)
+                    const domainList = text.split('\n').map(d => d.trim()).filter(d => d.length > 0);
+                    
+                    Serializer.write(DB_KEYS.BLOCKLIST, domainList);
+                    localStorage.setItem(DB_KEYS.BLOCKLIST_UPDATED, now.toString());
+                    console.log(`✅ Blocklist updated! Loaded ${domainList.length} blocked domains.`);
+                }
+            } catch (err) {
+                console.warn("⚠️ Could not fetch blocklist. Using fallback.", err);
+                Serializer.write(DB_KEYS.BLOCKLIST, FALLBACK_BLOCKLIST);
+            }
         }
     },
 
     users: {
-        getAll: () => Serializer.read(DB_KEYS.USERS),
+        getAll: () => Serializer.read(DB_KEYS.USERS) || [],
 
         register: (userData) => {
-            // 1. Validate
+            // 1. Strict Validation
             const error = Validators.user(userData);
             if (error) return { success: false, message: error };
 
-            // 2. Check Duplicates
             const users = DB.users.getAll();
-            if (users.find(u => u.email === userData.email)) {
-                return { success: false, message: "Email already exists" };
+            const cleanEmail = userData.email.trim().toLowerCase();
+
+            // 2. Check Duplicates
+            if (users.find(u => u.email === cleanEmail)) {
+                return { success: false, message: "Email already registered." };
             }
 
-            // 3. Create & Save
+            // 3. Create
             const newUser = {
-                id: Date.now(), // Simple ID generation
-                ...userData,
+                id: Date.now(),
+                name: userData.name.trim(),
+                email: cleanEmail,
+                password: userData.password, // In real app, hash this!
+                role: userData.role,
                 wishlist: [],
                 enrolledCourses: []
             };
+            
             users.push(newUser);
             Serializer.write(DB_KEYS.USERS, users);
             return { success: true, user: newUser };
@@ -85,22 +149,19 @@ const DB = {
 
         login: (email, password) => {
             const users = DB.users.getAll();
-            const user = users.find(u => u.email === email && u.password === password);
+            const user = users.find(u => u.email === email.trim().toLowerCase() && u.password === password);
             if (user) {
-                Serializer.write(DB_KEYS.SESSION, user); // Save session
+                Serializer.write(DB_KEYS.SESSION, user);
                 return { success: true, user };
             }
-            return { success: false, message: "Invalid Credentials" };
+            return { success: false, message: "Invalid email or password." };
         },
 
         getLoggedIn: () => {
-            // Always fetch fresh data for the logged-in user
             const session = Serializer.read(DB_KEYS.SESSION);
             if (!session) return null;
-
-            // Re-fetch from main DB to ensure we have latest progress
-            const allUsers = DB.users.getAll();
-            return allUsers.find(u => u.id === session.id);
+            // Always refresh from DB source
+            return DB.users.getAll().find(u => u.id === session.id) || null;
         },
 
         logout: () => {
@@ -110,48 +171,56 @@ const DB = {
     },
 
     courses: {
-        getAll: () => Serializer.read(DB_KEYS.COURSES),
-
-        getById: (id) => {
-            const courses = DB.courses.getAll();
-            return courses.find(c => c.id == id);
-        },
-
+        getAll: () => Serializer.read(DB_KEYS.COURSES) || [],
+        
         add: (courseData) => {
             const error = Validators.course(courseData);
             if (error) return { success: false, message: error };
-
+            
             const courses = DB.courses.getAll();
+            
+            // Edit Mode
+            if (courseData.id) {
+                const idx = courses.findIndex(c => c.id == courseData.id);
+                if (idx > -1) {
+                    courses[idx] = { ...courses[idx], ...courseData };
+                    Serializer.write(DB_KEYS.COURSES, courses);
+                    return { success: true };
+                }
+            }
+            
+            // Create Mode
             const newCourse = { id: Date.now(), ...courseData };
             courses.push(newCourse);
             Serializer.write(DB_KEYS.COURSES, courses);
             return { success: true };
-        }
+        },
+        
+        getById: (id) => DB.courses.getAll().find(c => c.id == id)
     },
 
     student: {
         enroll: (userId, courseId) => {
             const users = DB.users.getAll();
-            const userIndex = users.findIndex(u => u.id === userId);
-            if (userIndex === -1) return { success: false, message: "User not found" };
+            const idx = users.findIndex(u => u.id === userId);
+            if (idx === -1) return { success: false, message: "User not found" };
 
-            // Check if already enrolled
-            const alreadyEnrolled = users[userIndex].enrolledCourses.find(c => c.courseId == courseId);
-            if (alreadyEnrolled) return { success: false, message: "Already enrolled" };
+            if (users[idx].enrolledCourses.find(c => c.courseId == courseId)) {
+                return { success: false, message: "Already enrolled." };
+            }
 
-            users[userIndex].enrolledCourses.push({
-                courseId: courseId,
+            users[idx].enrolledCourses.push({
+                courseId: parseInt(courseId),
                 progress: 0,
-                isPaid: false, // Default to unpaid unless logic changes
-                isCompleted: false,
+                isPaid: true,
                 completedLessons: []
             });
-
+            
             Serializer.write(DB_KEYS.USERS, users);
             return { success: true };
         }
     }
 };
 
-// Auto-initialize on load
+// Start the engine
 DB.init();
