@@ -1,0 +1,11 @@
+:root { 
+    --primary-color: #2563eb; 
+    --secondary-color: #475569; 
+    --success-color: #22c55e; 
+    --danger-color: #ef4444; 
+    --bg-color: #f8fafc; 
+    --text-main: #0f172a; 
+    --font-main: 'Inter', sans-serif; 
+} 
+* { box-sizing: border-box; margin: 0; padding: 0; } 
+body { font-family: var(--font-main); background: var(--bg-color); color: var(--text-main); } 
