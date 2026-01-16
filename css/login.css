@@ -1,0 +1,178 @@
+/* Login page styles — clean modern look using existing color tokens */
+:root {
+  --card-bg: #ffffff;
+  --muted: #6b7280;
+}
+
+.auth-page {
+  min-height: 100vh;
+  background: linear-gradient(
+    180deg,
+    rgba(37, 99, 235, 0.06) 0%,
+    rgba(248, 250, 252, 1) 100%
+  );
+  position: relative;
+}
+
+/* Center the card using absolute positioning + transform (works without Flexbox) */
+.auth-card {
+  width: 360px;
+  background: var(--card-bg);
+  border-radius: 12px;
+  padding: 28px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 15px;
+  border: 1px solid rgba(15, 23, 42, 0.04);
+}
+
+.brand-title {
+  color: var(--primary-color);
+  font-size: 22px;
+  margin-bottom: 4px;
+}
+
+.brand-sub {
+  color: var(--muted);
+  font-size: 13px;
+  margin-bottom: 18px;
+}
+
+.auth-form .field {
+  margin-bottom: 14px;
+}
+
+.auth-form label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--secondary-color);
+  font-size: 13px;
+}
+
+.auth-form input[type="email"],
+.auth-form input[type="password"],
+.auth-form input[type="text"] {
+  width: 100%;
+  padding: 10px 12px 10px 12px;
+  /* reserve space on the right for the show/hide button */
+  padding-right: 48px;
+  border-radius: 8px;
+  border: 1px solid #e6e9ef;
+  background: #fbfcfd;
+  outline: none;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+/* ensure inputs inside pw-wrap account for the toggle button */
+.pw-wrap input {
+  padding-right: 64px;
+}
+
+.pw-wrap button {
+  min-width: 42px;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.auth-form input:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.06);
+}
+
+/* password wrapper */
+.pw-wrap {
+  position: relative;
+}
+.pw-wrap button {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: var(--primary-color);
+  padding: 6px 8px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.error {
+  display: none;
+  color: var(--danger-color);
+  font-size: 12px;
+  margin-top: 6px;
+}
+
+/* show error messages only after the user attempts to submit the form */
+.auth-form.submitted input:invalid + .error {
+  display: block;
+}
+
+.options {
+  display: block;
+  margin: 8px 0 22px 0;
+  font-size: 13px;
+  color: var(--secondary-color);
+}
+
+.options .forgot {
+  float: right;
+  color: var(--secondary-color);
+  text-decoration: none;
+}
+.options .forgot:hover {
+  text-decoration: underline;
+}
+
+/* Style checkbox with primary color */
+.auth-form input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  vertical-align: middle;
+  margin-right: 8px;
+  accent-color: var(--primary-color);
+}
+
+.btn {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+}
+
+.btn.primary {
+  background: linear-gradient(90deg, var(--primary-color), #1e40af);
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.18);
+  margin-top: 12px; /* push button downward for clearer spacing */
+}
+
+.meta {
+  text-align: center;
+  margin-top: 14px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.meta a {
+  color: var(--primary-color);
+  text-decoration: none;
+}
+
+.form-message {
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--success-color);
+}
+
+/* small responsive tweak */
+@media (max-width: 420px) {
+  .auth-card {
+    width: 92%;
+    padding: 20px;
+  }
+}

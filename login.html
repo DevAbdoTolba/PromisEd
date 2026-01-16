@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sign In — PromisEd</title>
+    <link rel="stylesheet" href="css/global.css" />
+    <link rel="stylesheet" href="css/login.css" />
+  </head>
+  <body>
+    <main class="auth-page">
+      <div class="auth-card" role="region" aria-label="Sign in">
+        <div class="brand">
+          <h1 class="brand-title">PromisEd</h1>
+          <p class="brand-sub">Welcome back — please sign in to your account</p>
+        </div>
+
+        <form id="loginForm" class="auth-form" novalidate>
+          <div class="field">
+            <label for="email">Email</label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              placeholder="you@domain.com"
+              pattern="^[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,6}$"
+              title="Please enter a valid email address (e.g. you@domain.com, .net, .org)"
+              required
+            />
+            <small class="error">Please enter a valid email.</small>
+          </div>
+
+          <div class="field">
+            <label for="password">Password</label>
+            <div class="pw-wrap">
+              <input
+                id="password"
+                name="password"
+                type="password"
+                placeholder="Your password"
+                minlength="6"
+                required
+              />
+              <small class="error"
+                >Password must be at least 6 characters.</small
+              >
+              <button type="button" id="togglePw" aria-label="Show password">
+                Show
+              </button>
+            </div>
+          </div>
+
+          <div class="options">
+            <label class="remember"
+              ><input type="checkbox" id="remember" /> Remember me</label
+            >
+            <a class="forgot" href="#">Forgot password?</a>
+          </div>
+
+          <button type="submit" class="btn primary">Sign in</button>
+
+          <div class="meta">
+            <p>
+              Don't have an account? <a href="register.html">Create account</a>
+            </p>
+          </div>
+
+          <div id="formMessage" class="form-message" aria-live="polite"></div>
+        </form>
+      </div>
+    </main>
+
+    <script src="js/db.js"></script>
+    <script src="js/login.js"></script>
+  </body>
+</html>

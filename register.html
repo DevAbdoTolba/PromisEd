@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Create Account — PromisEd</title>
+    <link rel="stylesheet" href="css/global.css" />
+    <link rel="stylesheet" href="css/login.css" />
+  </head>
+  <body>
+    <main class="auth-page">
+      <div class="auth-card" role="region" aria-label="Register">
+        <div class="brand">
+          <h1 class="brand-title">Create account</h1>
+          <p class="brand-sub">Join PromisEd — create your account</p>
+        </div>
+
+        <form id="registerForm" class="auth-form" novalidate>
+          <div class="field">
+            <label for="name">Full name</label>
+            <input
+              id="name"
+              name="name"
+              type="text"
+              placeholder="Your name"
+              required
+            />
+            <small class="error">Please enter your name.</small>
+          </div>
+
+          <div class="field">
+            <label for="email">Email</label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              placeholder="you@domain.com"
+              pattern="^[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,6}$"
+              title="Please enter a valid email address (e.g. you@domain.com, .net, .org)"
+              required
+            />
+            <small class="error">Please enter a valid email.</small>
+          </div>
+
+          <div class="field">
+            <label for="password">Password</label>
+            <div class="pw-wrap">
+              <input
+                id="password"
+                name="password"
+                type="password"
+                placeholder="Create a password"
+                minlength="6"
+                required
+              />
+              <small class="error"
+                >Password must be at least 6 characters.</small
+              >
+              <button type="button" id="togglePw" aria-label="Show password">
+                Show
+              </button>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="confirm">Confirm password</label>
+            <div class="pw-wrap">
+              <input
+                id="confirm"
+                name="confirm"
+                type="password"
+                placeholder="Repeat password"
+                minlength="6"
+                required
+              />
+              <small id="confirmError" class="error"
+                >Passwords do not match.</small
+              >
+              <button
+                type="button"
+                id="toggleConfirm"
+                aria-label="Show confirm password"
+              >
+                Show
+              </button>
+            </div>
+          </div>
+
+          <div class="options">
+            <label class="remember"
+              ><input type="checkbox" id="agree" required /> I agree to the
+              <a href="#">terms</a></label
+            >
+          </div>
+
+          <button type="submit" class="btn primary">Create account</button>
+
+          <div class="meta">
+            <p>Already have an account? <a href="login.html">Sign in</a></p>
+          </div>
+
+          <div id="formMessage" class="form-message" aria-live="polite"></div>
+        </form>
+      </div>
+    </main>
+
+    <script src="js/db.js"></script>
+    <script src="js/register.js"></script>
+  </body>
+</html>
