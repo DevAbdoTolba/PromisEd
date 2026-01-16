@@ -16,27 +16,14 @@
   }
 
   // Prefill email if user chose "remember" previously
-  try {
-    var savedEmail = localStorage.getItem("promised_last_email");
-    if (savedEmail && document.getElementById("email")) {
-      document.getElementById("email").value = savedEmail;
-    }
-  } catch (err) {
-    /* ignore storage errors */
+  var savedEmail = localStorage.getItem("promised_last_email");
+  if (savedEmail && document.getElementById("email")) {
+    document.getElementById("email").value = savedEmail;
   }
 
   // If a session already exists, redirect to home
-  try {
-    var current =
-      window.DB && DB.session && DB.session.current
-        ? DB.session.current()
-        : null;
-    if (current) {
-      window.location.replace("index.html");
-    }
-  } catch (e) {
-    /* ignore */
-  }
+  var current = (window.DB && DB.session) ? DB.session.current() : null;
+  if (current) window.location.replace('index.html');
 
   // Ensure password is hidden by default and when page is shown
   function hidePassword() {
@@ -104,19 +91,11 @@
       }
 
       // successful login -> create session
-      try {
-        DB.session.create(res.user);
-      } catch (e) {
-        /* ignore */
-      }
+      DB.session.create(res.user);
       // Fake sign-in success
       var email = document.getElementById("email").value;
       if (document.getElementById("remember").checked) {
-        try {
-          localStorage.setItem("promised_last_email", email);
-        } catch (err) {
-          /* ignore */
-        }
+        localStorage.setItem("promised_last_email", email);
       }
 
       message.textContent = "Signed in successfully. Redirecting...";

@@ -18,12 +18,8 @@
   window.addEventListener("pageshow", hidePasswords);
 
   // If a session already exists, redirect to home
-  try {
-    var currentSession = (window.DB && DB.session && DB.session.current) ? DB.session.current() : null;
-    if (currentSession) {
-      window.location.replace('index.html');
-    }
-  } catch (e) { /* ignore */ }
+  var currentSession = window.DB && DB.session ? DB.session.current() : null;
+  if (currentSession) window.location.replace("index.html");
 
   // Toggle password visibility
   toggle &&
@@ -51,9 +47,7 @@
   function validateMatch() {
     if (!password || !confirm) return;
     var match = confirm.value === password.value;
-    try {
-      confirm.setCustomValidity(match ? "" : "Passwords do not match");
-    } catch (e) {}
+    confirm.setCustomValidity(match ? "" : "Passwords do not match");
 
     // Show inline message only after user attempted to submit
     if (
@@ -63,9 +57,7 @@
       form.classList.contains("submitted")
     ) {
       confirmError.style.display = "block";
-      try {
-        confirm.reportValidity();
-      } catch (e) {}
+      confirm.reportValidity();
     } else {
       confirmError.style.display = "none";
     }
@@ -73,7 +65,21 @@
   // attach live listeners so the error clears while typing (but don't show until submitted)
   password && password.addEventListener("input", validateMatch);
   confirm && confirm.addEventListener("input", validateMatch);
-  // Basic submit with password match check
+  // Agree checkbox validation
+  var agreeCheckbox = document.getElementById("agree");
+  var agreeError = document.getElementById("agreeError");
+  function validateAgree() {
+    if (!agreeCheckbox) return;
+    var ok = !!agreeCheckbox.checked;
+    agreeCheckbox.setCustomValidity(ok ? "" : "You must accept the terms");
+    if (!ok && form && form.classList && form.classList.contains("submitted")) {
+      agreeError.style.display = "block";
+      agreeCheckbox.reportValidity();
+    } else {
+      agreeError.style.display = "none";
+    }
+  }
+  agreeCheckbox && agreeCheckbox.addEventListener("change", validateAgree); // Basic submit with password match check
   form &&
     form.addEventListener("submit", function (e) {
       e.preventDefault(); // mark that user attempted to submit so validation messages appear
@@ -81,15 +87,13 @@
       hidePasswords();
       confirmError.style.display = "none";
 
-      // validate match and show inline error if needed
+      // validate match and agree before final check (shows inline messages if needed)
       validateMatch();
+      validateAgree();
 
       if (!form.checkValidity()) {
         var firstInvalid = form.querySelector(":invalid");
-        if (firstInvalid)
-          try {
-            firstInvalid.focus();
-          } catch (e) {}
+        if (firstInvalid) firstInvalid.focus();
         return;
       }
 
@@ -98,39 +102,30 @@
       message.style.color = "var(--success-color)";
 
       // Build user object and call DB.users.register()
-      try {
-        var userObj = {
-          name: (document.getElementById("name").value || "").trim(),
-          email: (document.getElementById("email").value || "").trim(),
-          password: document.getElementById("password").value,
-          role: "student",
-          wishlist: [],
-          enrolledCourses: [],
-        };
+      var userObj = {
+        name: (document.getElementById("name").value || "").trim(),
+        email: (document.getElementById("email").value || "").trim(),
+        password: document.getElementById("password").value,
+        role: "student",
+        wishlist: [],
+        enrolledCourses: [],
+      };
 
-        if (!window.DB || !DB.users) {
-          message.textContent = "Internal error: DB not available.";
-          message.style.color = "var(--danger-color)";
-          return;
-        }
-
-        var res = DB.users.register(userObj);
-        if (!res.success) {
-          message.textContent = res.error || "Registration failed.";
-          message.style.color = "var(--danger-color)";
-          return;
-        }
-
-        // Save last email for convenience (remember option on login)
-        try {
-          localStorage.setItem("promised_last_email", userObj.email);
-        } catch (e) {}
-      } catch (err) {
-        // fallback error
-        message.textContent = "Registration failed.";
+      if (!window.DB || !DB.users) {
+        message.textContent = "Internal error: DB not available.";
         message.style.color = "var(--danger-color)";
         return;
       }
+
+      var res = DB.users.register(userObj);
+      if (!res.success) {
+        message.textContent = res.error || "Registration failed.";
+        message.style.color = "var(--danger-color)";
+        return;
+      }
+
+      // Save last email for convenience (remember option on login)
+      localStorage.setItem("promised_last_email", userObj.email);
 
       setTimeout(function () {
         window.location.href = "login.html";
