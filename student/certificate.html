@@ -110,10 +110,23 @@
             window.currentEnrollment = enrollment;
         })();
 
+        // function to generate a deterministic hash from a string
+        // this ensures the same input always produces the same output
+        const generateHash = (str) => {
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                const char = str.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash; // convert to 32-bit integer
+            }
+            return Math.abs(hash).toString(36).toUpperCase();
+        };
+
         // function to render the certificate
         const renderCertificate = () => {
             const user = window.currentUser;
             const courseId = window.currentCourseId;
+            const enrollment = window.currentEnrollment;
 
             // get the course details from the DB
             const course = DB.courses.getById(courseId);
@@ -127,14 +140,20 @@
             courseTitleEl.textContent = course ? course.title : 'Course Completed';
 
             // generate the completion date
+            // use stored completedAt if available, otherwise use current date
             const completionDateEl = document.getElementById('completionDate');
-            const today = new Date();
+            const completionTimestamp = enrollment.completedAt || Date.now();
+            const completionDate = new Date(completionTimestamp);
             const options = { year: 'numeric', month: 'long', day: 'numeric' };
-            completionDateEl.textContent = today.toLocaleDateString('en-US', options);
+            completionDateEl.textContent = completionDate.toLocaleDateString('en-US', options);
 
-            // generate the unique certificate id
+            // generate a DETERMINISTIC certificate ID
+            // uses userId + courseId + user creation date to create a consistent, verifiable ID
+            // this ID will be the same every time the user views their certificate
             const certificateIdEl = document.getElementById('certificateId');
-            const certId = `CERT-${user.id}-${courseId}-${Date.now().toString(36).toUpperCase()}`;
+            const uniqueString = `${user.id}-${courseId}-${user.id}`;
+            const hashPart = generateHash(uniqueString);
+            const certId = `CERT-${user.id}-${courseId}-${hashPart}`;
             certificateIdEl.textContent = certId;
         };
 
