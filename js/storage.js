@@ -220,6 +220,29 @@ const DB = {
             
             Serializer.write(DB_KEYS.USERS, users);
             return { success: true };
+        },
+
+        // Update course progress for a student
+        // Sets completedAt timestamp when progress reaches 100%
+        updateProgress: (userId, courseId, newProgress) => {
+            const users = DB.users.getAll();
+            const userIdx = users.findIndex(u => u.id === userId);
+            if (userIdx === -1) return { success: false, message: "User not found" };
+
+            const enrollment = users[userIdx].enrolledCourses.find(c => c.courseId == courseId);
+            if (!enrollment) return { success: false, message: "Not enrolled in this course" };
+
+            // Update the progress
+            enrollment.progress = newProgress;
+
+            // Set completedAt timestamp when course is completed (100%)
+            // Only set once - don't overwrite if already completed
+            if (newProgress === 100 && !enrollment.completedAt) {
+                enrollment.completedAt = Date.now();
+            }
+
+            Serializer.write(DB_KEYS.USERS, users);
+            return { success: true, enrollment };
         }
     },
 
@@ -279,11 +302,13 @@ const DB = {
         },
 
         // Get average rating for a course
+        // Returns: number (rounded to 1 decimal) or null if no feedback
         getCourseRating: (courseId) => {
             const courseFeedback = DB.feedback.getByCourse(courseId);
             if (courseFeedback.length === 0) return null;
             const sum = courseFeedback.reduce((acc, f) => acc + f.rating, 0);
-            return (sum / courseFeedback.length).toFixed(1);
+            // parseFloat ensures we return a number, not a string
+            return parseFloat((sum / courseFeedback.length).toFixed(1));
         }
     }
 };

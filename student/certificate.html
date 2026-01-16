@@ -140,26 +140,26 @@
             courseTitleEl.textContent = course ? course.title : 'Course Completed';
 
             // generate the completion date
-            // use stored completedAt if available, otherwise use current date
+            // completedAt is set by DB.student.updateProgress() when progress reaches 100%
+            // fallback to current date only for legacy enrollments without completedAt
             const completionDateEl = document.getElementById('completionDate');
             const completionTimestamp = enrollment.completedAt || Date.now();
             const completionDate = new Date(completionTimestamp);
             const options = { year: 'numeric', month: 'long', day: 'numeric' };
             completionDateEl.textContent = completionDate.toLocaleDateString('en-US', options);
 
-            // generate a DETERMINISTIC certificate ID
-            // uses userId + courseId + user creation date to create a consistent, verifiable ID
-            // this ID will be the same every time the user views their certificate
+            // generate a deterministic certificate ID
             const certificateIdEl = document.getElementById('certificateId');
-            const uniqueString = `${user.id}-${courseId}-${user.id}`;
+            const uniqueString = `${user.id}-${courseId}-${user.email}`;
             const hashPart = generateHash(uniqueString);
-            const certId = `CERT-${user.id}-${courseId}-${hashPart}`;
+            const certId = `CERT-${user.id}-${courseId}-${hashPart}`; 
             certificateIdEl.textContent = certId;
         };
-
-        // execute rendering
-        renderCertificate();
-
+// execute rendering only if validation passed
+// (window.currentUser is only set when all validation checks succeed)
+        if (window.currentUser) {
+            renderCertificate();
+        }   
         // action buttons
         const downloadBtn = document.getElementById('downloadBtn');
         const backBtn = document.getElementById('backBtn');

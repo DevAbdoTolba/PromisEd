@@ -92,71 +92,75 @@
             window.currentCourseId = courseId;
             window.currentUser = user;
         })();
+
+        // only initialize the UI if validation passed (window.currentUser is set)
+        if (window.currentUser) {
 // get the rating options from the DOM
-        const ratingOptions = document.getElementById('ratingOptions');
-        const ratingItems = document.querySelectorAll('.rating-item');
-        const tooltip = document.getElementById('tooltip');
-        let selectedRating = null;
+            const ratingOptions = document.getElementById('ratingOptions');
+            const ratingItems = document.querySelectorAll('.rating-item');
+            const tooltip = document.getElementById('tooltip');
+            let selectedRating = null;
 
 // add a click event to each rating item
-        for (const item of ratingItems) {
-            item.addEventListener('click', () => {
-                const value = item.getAttribute('data-value');
-                const label = item.getAttribute('data-label');
-                
+            for (const item of ratingItems) {
+                item.addEventListener('click', () => {
+                    const value = item.getAttribute('data-value');
+                    const label = item.getAttribute('data-label');
+                    
 // remove the selected class from all rating items
-                for (const otherItem of ratingItems) {
-                    otherItem.classList.remove('selected');
-                }
-                
+                    for (const otherItem of ratingItems) {
+                        otherItem.classList.remove('selected');
+                    }
+                    
 // add the selected class to the clicked rating item
-                item.classList.add('selected');
-                selectedRating = value;
+                    item.classList.add('selected');
+                    selectedRating = value;
 // show the tooltip with the label
-                tooltip.textContent = label;
-                tooltip.classList.add('visible');
+                    tooltip.textContent = label;
+                    tooltip.classList.add('visible');
 // position the tooltip under the selected rating item
 
-                const rect = item.getBoundingClientRect();
-                const parentRect = ratingOptions.getBoundingClientRect();
-                tooltip.style.left = `${rect.left - parentRect.left + rect.width / 2}px`;
-            });
-        }
-
-        const submitBtn = document.getElementById('submitBtn');
-        const commentBox = document.getElementById('commentBox');
-
-        submitBtn.addEventListener('click', () => {
-            if (!selectedRating) {
-                alert('Please select a rating before submitting.');
-                return;
+                    const rect = item.getBoundingClientRect();
+                    const parentRect = ratingOptions.getBoundingClientRect();
+                    tooltip.style.left = `${rect.left - parentRect.left + rect.width / 2}px`;
+                });
             }
+
+            const submitBtn = document.getElementById('submitBtn');
+            const commentBox = document.getElementById('commentBox');
+
+            submitBtn.addEventListener('click', () => {
+                if (!selectedRating) {
+                    alert('Please select a rating before submitting.');
+                    return;
+                }
 // build the feedback data object
-            const feedbackData = {
-                courseId: window.currentCourseId,
-                rating: parseInt(selectedRating),
-                comment: commentBox.value.trim(),
-                timestamp: Date.now(),
-                userId: window.currentUser.id
-            };
+                const feedbackData = {
+                    courseId: window.currentCourseId,
+                    rating: parseInt(selectedRating),
+                    comment: commentBox.value.trim(),
+                    timestamp: Date.now(),
+                    userId: window.currentUser.id
+                };
 // save the feedback to the database using DB.feedback.add()
-            const result = DB.feedback.add(feedbackData);
-            
-            if (result.success) {
-                console.log('Feedback saved:', result.feedback);
-                alert('Thank you for your feedback!');
-                window.location.href = `certificate.html?courseId=${window.currentCourseId}`;
-            } else {
-                // handle error (e.g., already submitted feedback)
-                alert(result.message);
-            }
-        });
+                const result = DB.feedback.add(feedbackData);
+                
+                if (result.success) {
+                    console.log('Feedback saved:', result.feedback);
+                    alert('Thank you for your feedback!');
+                    window.location.href = `certificate.html?courseId=${window.currentCourseId}`;
+                } else {
+                    // handle error (e.g., already submitted feedback)
+                    alert(result.message);
+                }
+            });
 
 //add close button event listener to redirect to the course player page
-        const closeBtn = document.getElementById('closeBtn');
-        closeBtn.addEventListener('click', () => {
-            window.location.href = `course_player.html?courseId=${window.currentCourseId}`;
-        });
+            const closeBtn = document.getElementById('closeBtn');
+            closeBtn.addEventListener('click', () => {
+                window.location.href = `course_player.html?courseId=${window.currentCourseId}`;
+            });
+        }
     </script>
 </body>
 </html>
