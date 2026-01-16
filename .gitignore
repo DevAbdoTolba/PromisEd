@@ -137,4 +137,11 @@ dist
 
 # Vite logs files
 vite.config.js.timestamp-*
-vite.config.ts.timestamp-*
+vite.config.ts.timestamp-* 
+
+# Ignore assistant/course instruction files
+# Copilot/GitHub assistant instruction file
+.github/copilot-instructions.md
+# Strict prompt / instructor rules (may live under .github/instructions)
+.github/instructions/Strict_prompt.instructions.md
+.github/instructions/*.instructions.md
