@@ -7,6 +7,7 @@ const DB_KEYS = {
     USERS: 'users',
     COURSES: 'courses',
     CATEGORIES: 'categories',
+    FEEDBACK: 'feedback',
     SESSION: 'current_user',
     BLOCKLIST: 'email_blocklist',
     BLOCKLIST_UPDATED: 'blocklist_timestamp'
@@ -89,6 +90,7 @@ const DB = {
         if (!Serializer.read(DB_KEYS.USERS)) Serializer.write(DB_KEYS.USERS, []);
         if (!Serializer.read(DB_KEYS.COURSES)) Serializer.write(DB_KEYS.COURSES, []);
         if (!Serializer.read(DB_KEYS.CATEGORIES)) Serializer.write(DB_KEYS.CATEGORIES, []);
+        if (!Serializer.read(DB_KEYS.FEEDBACK)) Serializer.write(DB_KEYS.FEEDBACK, []);
 
         // 2. High-End: Fetch Spam Blocklist from GitHub
         const lastUpdate = parseInt(localStorage.getItem(DB_KEYS.BLOCKLIST_UPDATED) || "0");
@@ -218,6 +220,70 @@ const DB = {
             
             Serializer.write(DB_KEYS.USERS, users);
             return { success: true };
+        }
+    },
+
+    // Feedback storage for course reviews
+    feedback: {
+        getAll: () => Serializer.read(DB_KEYS.FEEDBACK) || [],
+
+        // Add new feedback entry
+        add: (feedbackData) => {
+            // Validate required fields
+            if (!feedbackData.userId) return { success: false, message: "User ID is required." };
+            if (!feedbackData.courseId) return { success: false, message: "Course ID is required." };
+            if (!feedbackData.rating || feedbackData.rating < 1 || feedbackData.rating > 5) {
+                return { success: false, message: "Rating must be between 1 and 5." };
+            }
+
+            const feedbackList = DB.feedback.getAll();
+
+            // Check if user already submitted feedback for this course
+            const existing = feedbackList.find(
+                f => f.userId == feedbackData.userId && f.courseId == feedbackData.courseId
+            );
+            if (existing) {
+                return { success: false, message: "You have already submitted feedback for this course." };
+            }
+
+            // Create feedback entry
+            const newFeedback = {
+                id: Date.now(),
+                userId: feedbackData.userId,
+                courseId: feedbackData.courseId,
+                rating: feedbackData.rating,
+                comment: feedbackData.comment || '',
+                timestamp: feedbackData.timestamp || Date.now()
+            };
+
+            feedbackList.push(newFeedback);
+            Serializer.write(DB_KEYS.FEEDBACK, feedbackList);
+            return { success: true, feedback: newFeedback };
+        },
+
+        // Get feedback for a specific course
+        getByCourse: (courseId) => {
+            return DB.feedback.getAll().filter(f => f.courseId == courseId);
+        },
+
+        // Get feedback by a specific user
+        getByUser: (userId) => {
+            return DB.feedback.getAll().filter(f => f.userId == userId);
+        },
+
+        // Check if user already gave feedback for a course
+        hasUserFeedback: (userId, courseId) => {
+            return DB.feedback.getAll().some(
+                f => f.userId == userId && f.courseId == courseId
+            );
+        },
+
+        // Get average rating for a course
+        getCourseRating: (courseId) => {
+            const courseFeedback = DB.feedback.getByCourse(courseId);
+            if (courseFeedback.length === 0) return null;
+            const sum = courseFeedback.reduce((acc, f) => acc + f.rating, 0);
+            return (sum / courseFeedback.length).toFixed(1);
         }
     }
 };

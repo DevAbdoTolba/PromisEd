@@ -139,10 +139,17 @@
                 timestamp: Date.now(),
                 userId: window.currentUser.id
             };
-// log the feedback data to the console
-            console.log('Feedback Submitted:', feedbackData);
-            alert('Thank you for your feedback!');
-            window.location.href = `certificate.html?courseId=${window.currentCourseId}`;
+// save the feedback to the database using DB.feedback.add()
+            const result = DB.feedback.add(feedbackData);
+            
+            if (result.success) {
+                console.log('Feedback saved:', result.feedback);
+                alert('Thank you for your feedback!');
+                window.location.href = `certificate.html?courseId=${window.currentCourseId}`;
+            } else {
+                // handle error (e.g., already submitted feedback)
+                alert(result.message);
+            }
         });
 
 //add close button event listener to redirect to the course player page
