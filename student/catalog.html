@@ -1,1 +1,95 @@
- 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Browse all courses on PromisEd - Find your next learning adventure">
+    <title>Course Catalog - PromisEd</title>
+    <link rel="stylesheet" href="../css/global.css">
+    <link rel="stylesheet" href="../css/student.css">
+</head>
+<body>
+    <script src="../js/storage.js"></script>
+    <script src="../js/navbar.js"></script>
+
+    <div class="container mt-3">
+        <h1>Course Catalog</h1>
+        <p class="text-muted mb-2">Find your next learning adventure</p>
+
+        <div class="filter-bar">
+            <input type="search" id="search-input" class="form-control" placeholder="Search courses...">
+            <select id="category-filter" class="form-control" style="width:200px;"></select>
+        </div>
+
+        <div id="courses-grid" class="catalog-grid clearfix"></div>
+        <p id="no-results" class="text-muted text-center hidden">No courses found matching your criteria.</p>
+    </div>
+
+    <script>
+        (function() {
+            var allCourses = DB.courses.getAll();
+            var grid = document.getElementById('courses-grid');
+            var noResults = document.getElementById('no-results');
+            var searchInput = document.getElementById('search-input');
+            var categoryFilter = document.getElementById('category-filter');
+
+            // Load categories dynamically
+            var categories = JSON.parse(localStorage.getItem('lms_categories')) || [];
+            categoryFilter.innerHTML = '<option value="">All Categories</option>';
+            categories.forEach(function(cat) {
+                categoryFilter.innerHTML += '<option value="' + cat.id + '">' + cat.name + '</option>';
+            });
+
+            function renderCourses(filteredCourses) {
+                grid.innerHTML = '';
+                
+                var approved = filteredCourses.filter(function(c) { return c.status === 'approved'; });
+
+                if (approved.length === 0) {
+                    noResults.classList.remove('hidden');
+                    return;
+                }
+
+                noResults.classList.add('hidden');
+                approved.forEach(function(course) {
+                    var card = document.createElement('div');
+                    card.className = 'col col-4';
+                    card.innerHTML = 
+                        '<div class="catalog-card">' +
+                            '<img src="' + (course.image || 'https://picsum.photos/seed/' + course.id + '/600/400') + '" alt="' + course.title + '" class="course-img">' +
+                            '<div class="catalog-card-body">' +
+                                '<h3>' + course.title + '</h3>' +
+                                '<p class="course-author">by ' + (course.author || 'Unknown') + '</p>' +
+                                '<p class="course-meta-info">' +
+                                    '<span>' + (course.lessons ? course.lessons.length : 0) + ' lessons</span>' +
+                                    '<span>' + (course.duration || 'N/A') + '</span>' +
+                                '</p>' +
+                                '<p class="catalog-price">' + (course.price > 0 ? '$' + course.price : 'Free') + '</p>' +
+                                '<a href="course_details.html?id=' + course.id + '" class="btn btn-primary" style="width:100%;">View Details</a>' +
+                            '</div>' +
+                        '</div>';
+                    grid.appendChild(card);
+                });
+            }
+
+            function filterCourses() {
+                var searchTerm = searchInput.value.toLowerCase();
+                var categoryId = categoryFilter.value;
+
+                var filtered = allCourses.filter(function(course) {
+                    var matchesSearch = course.title.toLowerCase().indexOf(searchTerm) !== -1;
+                    var matchesCategory = !categoryId || course.categoryId == categoryId;
+                    return matchesSearch && matchesCategory;
+                });
+
+                renderCourses(filtered);
+            }
+
+            searchInput.addEventListener('input', filterCourses);
+            categoryFilter.addEventListener('change', filterCourses);
+
+            renderCourses(allCourses);
+        })();
+    </script>
+</body>
+</html>

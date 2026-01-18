@@ -1,1 +1,159 @@
- 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Course details and enrollment">
+    <title>Course Details - PromisEd</title>
+    <link rel="stylesheet" href="../css/global.css">
+    <link rel="stylesheet" href="../css/student.css">
+</head>
+<body>
+    <script src="../js/storage.js"></script>
+    <script src="../js/navbar.js"></script>
+
+    <div class="container mt-3">
+        <a href="catalog.html" class="text-muted">&larr; Back to Catalog</a>
+
+        <div class="course-detail-layout mt-2 clearfix">
+            <div class="course-detail-img">
+                <img id="course-img" src="" alt="Course Image">
+            </div>
+            <div class="course-detail-info">
+                <h1 id="course-title">Course Title</h1>
+                <p class="course-author" id="course-author">by Author</p>
+                <div class="course-meta">
+                    <span id="course-category" class="course-badge">Category</span>
+                    <span id="lesson-count">0 lessons</span>
+                    <span id="course-duration">0h</span>
+                    <span id="course-status">Status</span>
+                </div>
+                <p id="course-description" class="mb-2">Course description goes here...</p>
+                
+                <div class="clearfix">
+                    <div style="float:left;">
+                        <span class="catalog-price" id="course-price">$0</span>
+                    </div>
+                    <div style="float:right;" id="action-buttons">
+                        <!-- Buttons added dynamically -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-2">
+            <h2 class="card-title mb-2">Course Curriculum</h2>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Lesson Title</th>
+                    </tr>
+                </thead>
+                <tbody id="lessons-table"></tbody>
+            </table>
+            <p id="no-lessons" class="text-muted text-center hidden">No lessons available yet.</p>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            var urlParams = new URLSearchParams(window.location.search);
+            var courseId = urlParams.get('id');
+
+            if (!courseId) {
+                window.location.href = 'catalog.html';
+                return;
+            }
+
+            var course = DB.courses.getById(courseId);
+            if (!course) {
+                alert('Course not found');
+                window.location.href = 'catalog.html';
+                return;
+            }
+
+            // Populate course info
+            document.getElementById('course-title').textContent = course.title;
+            document.getElementById('course-author').textContent = 'by ' + (course.author || 'Unknown');
+            document.getElementById('course-description').textContent = course.description || 'No description provided.';
+            document.getElementById('course-price').textContent = course.price > 0 ? '$' + course.price : 'Free';
+            document.getElementById('lesson-count').textContent = (course.lessons ? course.lessons.length : 0) + ' lessons';
+            document.getElementById('course-duration').textContent = course.duration || 'N/A';
+            document.getElementById('course-status').textContent = course.status === 'approved' ? '✓ Published' : 'Draft';
+            document.getElementById('course-img').src = course.image || 'https://picsum.photos/seed/' + course.id + '/600/400';
+            
+            // Get category name
+            var categories = JSON.parse(localStorage.getItem('lms_categories')) || [];
+            var category = categories.find(function(c) { return c.id == course.categoryId; });
+            document.getElementById('course-category').textContent = category ? category.name : 'Uncategorized';
+
+            // Populate lessons
+            var tbody = document.getElementById('lessons-table');
+            var noLessons = document.getElementById('no-lessons');
+
+            if (!course.lessons || course.lessons.length === 0) {
+                noLessons.classList.remove('hidden');
+            } else {
+                course.lessons.forEach(function(lesson, i) {
+                    var row = document.createElement('tr');
+                    row.innerHTML = '<td>' + (i + 1) + '</td><td>' + lesson.title + '</td>';
+                    tbody.appendChild(row);
+                });
+            }
+
+            // Action Buttons
+            var actions = document.getElementById('action-buttons');
+            var user = DB.users.getLoggedIn();
+
+            if (!user) {
+                actions.innerHTML = '<a href="../register.html" class="btn btn-primary">Register to Enroll</a>';
+            } else if (user.role === 'admin') {
+                actions.innerHTML = '<a href="../admin/course_editor.html?id=' + course.id + '" class="btn btn-primary">Edit Course</a>';
+            } else {
+                // Check if already enrolled
+                var isEnrolled = user.enrolledCourses && user.enrolledCourses.find(function(e) { return e.courseId == course.id; });
+                var isInWishlist = user.wishlist && user.wishlist.includes(parseInt(courseId));
+                
+                var wishlistBtn = '<button id="wishlist-btn" class="btn ' + (isInWishlist ? 'btn-danger' : 'btn-outline') + '" style="margin-right:10px;">' +
+                    (isInWishlist ? '❤️ In Wishlist' : '🤍 Add to Wishlist') + '</button>';
+                
+                if (isEnrolled) {
+                    actions.innerHTML = wishlistBtn + '<a href="course_player.html?id=' + course.id + '" class="btn btn-success">Continue Learning</a>';
+                } else {
+                    // Free courses go directly to enrollment
+                    var enrollUrl = (course.price === 0 || !course.price) ? 
+                        'checkout.html?course=' + course.id : 
+                        'checkout.html?course=' + course.id;
+                    var btnText = (course.price === 0 || !course.price) ? 'Start Free Course' : 'Enroll Now';
+                    actions.innerHTML = wishlistBtn + '<a href="' + enrollUrl + '" class="btn btn-primary">' + btnText + '</a>';
+                }
+
+                // Wishlist toggle handler
+                document.getElementById('wishlist-btn').addEventListener('click', function() {
+                    var users = DB.users.getAll();
+                    var idx = users.findIndex(function(u) { return u.id === user.id; });
+                    
+                    if (!users[idx].wishlist) users[idx].wishlist = [];
+                    
+                    var courseIdNum = parseInt(courseId);
+                    var wishIdx = users[idx].wishlist.indexOf(courseIdNum);
+                    
+                    if (wishIdx === -1) {
+                        users[idx].wishlist.push(courseIdNum);
+                        this.className = 'btn btn-danger';
+                        this.innerHTML = '❤️ In Wishlist';
+                    } else {
+                        users[idx].wishlist.splice(wishIdx, 1);
+                        this.className = 'btn btn-outline';
+                        this.innerHTML = '🤍 Add to Wishlist';
+                    }
+                    
+                    localStorage.setItem('users', JSON.stringify(users));
+                    localStorage.setItem('current_user', JSON.stringify(users[idx]));
+                });
+            }
+        })();
+    </script>
+</body>
+</html>

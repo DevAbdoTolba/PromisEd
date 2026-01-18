@@ -1,76 +1,81 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Sign In — PromisEd</title>
-    <link rel="stylesheet" href="css/global.css" />
-    <link rel="stylesheet" href="css/login.css" />
-  </head>
-  <body>
-    <main class="auth-page">
-      <div class="auth-card" role="region" aria-label="Sign in">
-        <div class="brand">
-          <h1 class="brand-title">PromisEd</h1>
-          <p class="brand-sub">Welcome back — please sign in to your account</p>
-        </div>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Login to PromisEd - Access your courses and continue learning">
+    <title>Login - PromisEd</title>
+    <link rel="stylesheet" href="css/global.css">
+    <link rel="stylesheet" href="css/auth.css">
+</head>
+<body>
+    <script src="js/storage.js"></script>
+    <script>
+        // Redirect logged-in users away from auth pages
+        (function() {
+            var user = localStorage.getItem('current_user');
+            if (user) {
+                user = JSON.parse(user);
+                window.location.href = user.role === 'admin' ? 'admin/dashboard.html' : 'student/dashboard.html';
+            }
+        })();
+    </script>
+    <script src="js/navbar.js"></script>
 
-        <form id="loginForm" class="auth-form" novalidate>
-          <div class="field">
-            <label for="email">Email</label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              placeholder="you@domain.com"
-              pattern="^[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,6}$"
-              title="Please enter a valid email address (e.g. you@domain.com, .net, .org)"
-              required
-            />
-            <small class="error">Please enter a valid email.</small>
-          </div>
+    <div class="auth-container">
+        <div class="auth-card">
+            <h1 class="auth-title">Welcome Back</h1>
+            <p class="auth-subtitle">Login to continue your learning journey</p>
 
-          <div class="field">
-            <label for="password">Password</label>
-            <div class="pw-wrap">
-              <input
-                id="password"
-                name="password"
-                type="password"
-                placeholder="Your password"
-                minlength="6"
-                required
-              />
-              <small class="error"
-                >Password must be at least 6 characters.</small
-              >
-              <button type="button" id="togglePw" aria-label="Show password">
-                Show
-              </button>
-            </div>
-          </div>
+            <div id="error-alert" class="alert alert-danger hidden"></div>
 
-          <div class="options">
-            <label class="remember"
-              ><input type="checkbox" id="remember" /> Remember me</label
-            >
-            <a class="forgot" href="#">Forgot password?</a>
-          </div>
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" name="email" class="form-control" 
+                           placeholder="you@example.com" required>
+                    <span class="error-msg">Please enter a valid email address</span>
+                </div>
 
-          <button type="submit" class="btn primary">Sign in</button>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" class="form-control" 
+                           placeholder="Enter your password" required minlength="8">
+                    <span class="error-msg">Password must be at least 8 characters</span>
+                </div>
 
-          <div class="meta">
-            <p>
-              Don't have an account? <a href="register.html">Create account</a>
+                <button type="submit" class="btn btn-primary btn-block">Login</button>
+            </form>
+
+            <p class="auth-footer">
+                Don't have an account? <a href="register.html">Register here</a>
             </p>
-          </div>
+        </div>
+    </div>
 
-          <div id="formMessage" class="form-message" aria-live="polite"></div>
-        </form>
-      </div>
-    </main>
-
-    <script src="js/db.js"></script>
-    <script src="js/login.js"></script>
-  </body>
+    <script>
+        document.getElementById('login-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            var email = document.getElementById('email').value;
+            var password = document.getElementById('password').value;
+            var errorAlert = document.getElementById('error-alert');
+            
+            // Call DB login
+            var result = DB.users.login(email, password);
+            
+            if (result.success) {
+                // Role-based redirect
+                if (result.user.role === 'admin') {
+                    window.location.href = 'admin/dashboard.html';
+                } else {
+                    window.location.href = 'student/dashboard.html';
+                }
+            } else {
+                errorAlert.textContent = result.message;
+                errorAlert.classList.remove('hidden');
+            }
+        });
+    </script>
+</body>
 </html>

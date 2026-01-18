@@ -1,113 +1,139 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Create Account — PromisEd</title>
-    <link rel="stylesheet" href="css/global.css" />
-    <link rel="stylesheet" href="css/login.css" />
-  </head>
-  <body>
-    <main class="auth-page">
-      <div class="auth-card" role="region" aria-label="Register">
-        <div class="brand">
-          <h1 class="brand-title">Create account</h1>
-          <p class="brand-sub">Join PromisEd — create your account</p>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Register for PromisEd - Start your learning journey today">
+    <title>Register - PromisEd</title>
+    <link rel="stylesheet" href="css/global.css">
+    <link rel="stylesheet" href="css/auth.css">
+</head>
+<body>
+    <script src="js/storage.js"></script>
+    <script>
+        // Redirect logged-in users away from auth pages
+        (function() {
+            var user = localStorage.getItem('current_user');
+            if (user) {
+                user = JSON.parse(user);
+                window.location.href = user.role === 'admin' ? 'admin/dashboard.html' : 'student/dashboard.html';
+            }
+        })();
+    </script>
+    <script src="js/navbar.js"></script>
+
+    <div class="auth-container">
+        <div class="auth-card">
+            <h1 class="auth-title">Create Account</h1>
+            <p class="auth-subtitle">Join thousands of learners today</p>
+
+            <div id="error-alert" class="alert alert-danger hidden"></div>
+            <div id="success-alert" class="alert alert-success hidden"></div>
+
+            <form id="register-form">
+                <div class="form-group">
+                    <label for="name">Full Name</label>
+                    <input type="text" id="name" name="name" class="form-control" 
+                           placeholder="John Doe" required minlength="3" maxlength="50"
+                           pattern="^[a-zA-Z\u00C0-\u00FF\s'-]{3,50}$">
+                    <span class="error-msg">Name must be 3-50 letters only</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" name="email" class="form-control" 
+                           placeholder="you@example.com" required>
+                    <span class="error-msg">Please enter a valid email address</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" class="form-control" 
+                           placeholder="Min 8 chars, uppercase, lowercase, number, symbol" required
+                           pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$">
+                    <span class="error-msg">Password needs 8+ chars with uppercase, lowercase, number & symbol</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="confirm-password">Confirm Password</label>
+                    <input type="password" id="confirm-password" name="confirm-password" class="form-control" 
+                           placeholder="Re-enter your password" required>
+                    <span class="error-msg" id="confirm-error">Passwords must match</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="role">I want to:</label>
+                    <select id="role" name="role" class="form-control" required>
+                        <option value="student">Learn (Student)</option>
+                        <option value="admin">Teach (Admin)</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block">Create Account</button>
+            </form>
+
+            <p class="auth-footer">
+                Already have an account? <a href="login.html">Login here</a>
+            </p>
         </div>
+    </div>
 
-        <form id="registerForm" class="auth-form" novalidate>
-          <div class="field">
-            <label for="name">Full name</label>
-            <input
-              id="name"
-              name="name"
-              type="text"
-              placeholder="Your name"
-              required
-            />
-            <small class="error">Please enter your name.</small>
-          </div>
+    <script>
+        var form = document.getElementById('register-form');
+        var password = document.getElementById('password');
+        var confirmPassword = document.getElementById('confirm-password');
+        var confirmError = document.getElementById('confirm-error');
+        var errorAlert = document.getElementById('error-alert');
+        var successAlert = document.getElementById('success-alert');
 
-          <div class="field">
-            <label for="email">Email</label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              placeholder="you@domain.com"
-              pattern="^[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,6}$"
-              title="Please enter a valid email address (e.g. you@domain.com, .net, .org)"
-              required
-            />
-            <small class="error">Please enter a valid email.</small>
-          </div>
+        // Password match validation
+        confirmPassword.addEventListener('input', function() {
+            if (password.value !== confirmPassword.value) {
+                confirmPassword.setCustomValidity('Passwords do not match');
+                confirmError.style.display = 'block';
+            } else {
+                confirmPassword.setCustomValidity('');
+                confirmError.style.display = 'none';
+            }
+        });
 
-          <div class="field">
-            <label for="password">Password</label>
-            <div class="pw-wrap">
-              <input
-                id="password"
-                name="password"
-                type="password"
-                placeholder="Create a password"
-                minlength="6"
-                required
-              />
-              <small class="error"
-                >Password must be at least 6 characters.</small
-              >
-              <button type="button" id="togglePw" aria-label="Show password">
-                Show
-              </button>
-            </div>
-          </div>
-
-          <div class="field">
-            <label for="confirm">Confirm password</label>
-            <div class="pw-wrap">
-              <input
-                id="confirm"
-                name="confirm"
-                type="password"
-                placeholder="Repeat password"
-                minlength="6"
-                required
-              />
-              <small id="confirmError" class="error"
-                >Passwords do not match.</small
-              >
-              <button
-                type="button"
-                id="toggleConfirm"
-                aria-label="Show confirm password"
-              >
-                Show
-              </button>
-            </div>
-          </div>
-
-          <div class="options">
-            <label class="remember"
-              ><input type="checkbox" id="agree" required /> I agree to the
-              <a href="#">terms</a
-              ><small id="agreeError" class="error"
-                >You must accept the terms to continue.</small
-              ></label
-            >
-          </div>
-
-          <button type="submit" class="btn primary">Create account</button>
-
-          <div class="meta">
-            <p>Already have an account? <a href="login.html">Sign in</a></p>
-          </div>
-
-          <div id="formMessage" class="form-message" aria-live="polite"></div>
-        </form>
-      </div>
-    </main>
-
-    <script src="js/db.js"></script>
-    <script src="js/register.js"></script>
-  </body>
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Hide previous alerts
+            errorAlert.classList.add('hidden');
+            successAlert.classList.add('hidden');
+            
+            // Check password match
+            if (password.value !== confirmPassword.value) {
+                errorAlert.textContent = 'Passwords do not match.';
+                errorAlert.classList.remove('hidden');
+                return;
+            }
+            
+            var userData = {
+                name: document.getElementById('name').value,
+                email: document.getElementById('email').value,
+                password: password.value,
+                role: document.getElementById('role').value
+            };
+            
+            // Call DB register
+            var result = DB.users.register(userData);
+            
+            if (result.success) {
+                successAlert.textContent = 'Account created successfully! Redirecting to login...';
+                successAlert.classList.remove('hidden');
+                form.reset();
+                
+                setTimeout(function() {
+                    window.location.href = 'login.html';
+                }, 2000);
+            } else {
+                errorAlert.textContent = result.message;
+                errorAlert.classList.remove('hidden');
+            }
+        });
+    </script>
+</body>
 </html>
