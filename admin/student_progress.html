@@ -1,1 +1,104 @@
- 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Student progress report">
+    <title>Student Progress - Admin | PromisEd</title>
+    <link rel="stylesheet" href="../css/global.css">
+    <link rel="stylesheet" href="../css/admin.css">
+</head>
+<body>
+    <script src="../js/storage.js"></script>
+    <script src="../js/navbar.js"></script>
+
+    <div class="container mt-3">
+        <a href="students.html" class="text-muted">&larr; Back to Students</a>
+        
+        <div class="card mt-2">
+            <h1 id="student-name">Student Progress Report</h1>
+            <p id="student-email" class="text-muted"></p>
+        </div>
+
+        <div class="card mt-2">
+            <div class="card-header">
+                <h2 class="card-title">Course Progress</h2>
+            </div>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Course Name</th>
+                        <th>Status</th>
+                        <th>Progress</th>
+                    </tr>
+                </thead>
+                <tbody id="progress-table"></tbody>
+            </table>
+            <p id="no-courses" class="text-muted text-center hidden">This student has no enrolled courses.</p>
+        </div>
+
+        <div class="mt-2">
+            <a href="" id="certs-link" class="btn btn-outline">View Certificates</a>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            var user = DB.users.getLoggedIn();
+            if (!user || user.role !== 'admin') {
+                window.location.href = '../login.html';
+                return;
+            }
+
+            var urlParams = new URLSearchParams(window.location.search);
+            var studentId = urlParams.get('studentId');
+
+            if (!studentId) {
+                window.location.href = 'students.html';
+                return;
+            }
+
+            var users = DB.users.getAll();
+            var student = users.find(function(u) { return u.id == studentId; });
+
+            if (!student) {
+                alert('Student not found');
+                window.location.href = 'students.html';
+                return;
+            }
+
+            document.getElementById('student-name').textContent = student.name + ' - Progress Report';
+            document.getElementById('student-email').textContent = student.email;
+            document.getElementById('certs-link').href = 'student_certs.html?studentId=' + student.id;
+
+            var courses = DB.courses.getAll();
+            var tbody = document.getElementById('progress-table');
+            var noCourses = document.getElementById('no-courses');
+
+            if (!student.enrolledCourses || student.enrolledCourses.length === 0) {
+                noCourses.classList.remove('hidden');
+            } else {
+                student.enrolledCourses.forEach(function(enrollment) {
+                    var course = courses.find(function(c) { return c.id == enrollment.courseId; });
+                    var courseName = course ? course.title : 'Unknown Course';
+                    var isCompleted = enrollment.progress >= 100 || enrollment.isCompleted;
+                    var status = isCompleted ? 'Completed' : 'Active';
+                    var statusClass = isCompleted ? 'text-success' : 'text-muted';
+                    
+                    var row = document.createElement('tr');
+                    row.innerHTML = 
+                        '<td><strong>' + courseName + '</strong></td>' +
+                        '<td class="' + statusClass + '">' + status + '</td>' +
+                        '<td style="width:250px;">' +
+                            '<div class="progress-bar" style="display:inline-block;width:150px;vertical-align:middle;">' +
+                                '<div class="progress-fill" style="width:' + enrollment.progress + '%;"></div>' +
+                            '</div> ' +
+                            '<span>' + enrollment.progress + '%</span>' +
+                        '</td>';
+                    tbody.appendChild(row);
+                });
+            }
+        })();
+    </script>
+</body>
+</html>

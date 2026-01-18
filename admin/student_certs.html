@@ -1,1 +1,149 @@
- 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Student earned certificates">
+    <title>Student Certificates - Admin | PromisEd</title>
+    <link rel="stylesheet" href="../css/global.css">
+    <link rel="stylesheet" href="../css/admin.css">
+</head>
+<body>
+    <script src="../js/storage.js"></script>
+    <script src="../js/navbar.js"></script>
+
+    <div class="container mt-3">
+        <a href="students.html" class="text-muted">&larr; Back to Students</a>
+        
+        <div class="card mt-2">
+            <h1 id="student-name">Student Certificates</h1>
+            <p id="student-email" class="text-muted"></p>
+        </div>
+
+        <div id="certs-grid" class="row mt-2 clearfix"></div>
+        <p id="no-certs" class="text-muted text-center hidden" style="padding:40px;">
+            🎓 No Certificates Earned Yet<br>
+            <small>This student hasn't completed any courses.</small>
+        </p>
+    </div>
+
+    <style>
+        .cert-card {
+            background: var(--bg-white);
+            border: 2px solid var(--primary-color);
+            border-radius: var(--radius);
+            padding: 25px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .cert-card h3 {
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+        .cert-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+    </style>
+
+    <script>
+        (function() {
+            var user = DB.users.getLoggedIn();
+            if (!user || user.role !== 'admin') {
+                window.location.href = '../login.html';
+                return;
+            }
+
+            var urlParams = new URLSearchParams(window.location.search);
+            var studentId = urlParams.get('studentId');
+
+            if (!studentId) {
+                window.location.href = 'students.html';
+                return;
+            }
+
+            var users = DB.users.getAll();
+            var student = users.find(function(u) { return u.id == studentId; });
+
+            if (!student) {
+                alert('Student not found');
+                window.location.href = 'students.html';
+                return;
+            }
+
+            document.getElementById('student-name').textContent = student.name + ' - Certificates';
+            document.getElementById('student-email').textContent = student.email;
+
+            var courses = DB.courses.getAll();
+            var grid = document.getElementById('certs-grid');
+            var noCerts = document.getElementById('no-certs');
+
+            // Filter completed courses only
+            var completedCourses = (student.enrolledCourses || []).filter(function(e) {
+                return e.progress >= 100 || e.isCompleted === true;
+            });
+
+            if (completedCourses.length === 0) {
+                noCerts.classList.remove('hidden');
+            } else {
+                completedCourses.forEach(function(enrollment) {
+                    var course = courses.find(function(c) { return c.id == enrollment.courseId; });
+                    var courseName = course ? course.title : 'Unknown Course';
+                    
+                    var card = document.createElement('div');
+                    card.className = 'col col-4';
+                    card.innerHTML = 
+                        '<div class="cert-card">' +
+                            '<div class="cert-icon">🏆</div>' +
+                            '<h3>' + courseName + '</h3>' +
+                            '<p class="text-muted">Certificate of Completion</p>' +
+                            '<p class="text-muted"><small>Awarded to ' + student.name + '</small></p>' +
+                            '<button class="btn btn-outline mt-1 view-cert-btn" data-course="' + (course ? course.id : '') + '" data-name="' + student.name + '" data-title="' + courseName + '">View & Print</button>' +
+                        '</div>';
+                    grid.appendChild(card);
+                });
+
+                // Attach popup handlers
+                document.querySelectorAll('.view-cert-btn').forEach(function(btn) {
+                    btn.addEventListener('click', function() {
+                        var studentName = this.dataset.name;
+                        var courseTitle = this.dataset.title;
+                        var today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+                        
+                        var certHTML = '<!DOCTYPE html><html><head><title>Certificate</title><style>' +
+                            'body { font-family: Georgia, serif; text-align: center; padding: 50px; background: #fafafa; }' +
+                            '.certificate { max-width: 800px; margin: 0 auto; background: white; padding: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }' +
+                            '.cert-border { border: 3px solid #4f46e5; padding: 10px; }' +
+                            '.cert-inner { border: 1px solid #ddd; padding: 60px; }' +
+                            '.cert-logo { font-size: 4rem; margin-bottom: 20px; }' +
+                            '.cert-title { font-size: 2.5rem; color: #4f46e5; margin-bottom: 20px; }' +
+                            '.cert-name { font-size: 2rem; margin: 20px 0; font-style: italic; }' +
+                            '.cert-course { font-size: 1.5rem; color: #4f46e5; margin: 20px 0; }' +
+                            '.cert-date { margin-top: 30px; color: #888; }' +
+                            '.print-btn { margin-top: 30px; padding: 15px 40px; font-size: 1.1rem; background: #4f46e5; color: white; border: none; border-radius: 8px; cursor: pointer; }' +
+                            '.print-btn:hover { background: #3730a3; }' +
+                            '@media print { .no-print { display: none !important; } body { background: white; } .certificate { box-shadow: none; } }' +
+                            '</style></head><body>' +
+                            '<div class="certificate"><div class="cert-border"><div class="cert-inner">' +
+                            '<div class="cert-logo">🎓</div>' +
+                            '<h1 class="cert-title">Certificate of Completion</h1>' +
+                            '<p>This is to certify that</p>' +
+                            '<h2 class="cert-name">' + studentName + '</h2>' +
+                            '<p>has successfully completed the course</p>' +
+                            '<h3 class="cert-course">' + courseTitle + '</h3>' +
+                            '<p>on PromisEd Learning Platform</p>' +
+                            '<div class="cert-date">' + today + '</div>' +
+                            '</div></div></div>' +
+                            '<div class="no-print"><button class="print-btn" onclick="window.print()">Print Certificate</button></div>' +
+                            '</body></html>';
+                        
+                        var popup = window.open('', 'Certificate', 'width=900,height=700');
+                        popup.document.write(certHTML);
+                        popup.document.close();
+                    });
+                });
+            }
+        })();
+    </script>
+</body>
+</html>

@@ -1,1 +1,213 @@
- 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Manage course categories">
+    <title>Categories - Admin | PromisEd</title>
+    <link rel="stylesheet" href="../css/global.css">
+    <link rel="stylesheet" href="../css/admin.css">
+</head>
+<body>
+    <script src="../js/storage.js"></script>
+    <script src="../js/navbar.js"></script>
+
+    <div class="container mt-3">
+        <div class="clearfix mb-2">
+            <h1 style="float:left;">Manage Categories</h1>
+            <button id="add-btn" class="btn btn-primary" style="float:right;">+ Add Category</button>
+        </div>
+
+        <div id="error-alert" class="alert alert-danger hidden"></div>
+        <div id="success-alert" class="alert alert-success hidden"></div>
+
+        <div class="card">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="categories-table"></tbody>
+            </table>
+            <p id="no-categories" class="text-muted text-center hidden">No categories yet. Add one to get started.</p>
+        </div>
+    </div>
+
+    <!-- Add/Edit Modal -->
+    <div id="modal-overlay" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3 id="modal-title">Add Category</h3>
+            <div class="form-group mt-2">
+                <label for="category-name">Category Name</label>
+                <input type="text" id="category-name" class="form-control" placeholder="e.g., Web Development" required>
+            </div>
+            <div class="mt-2">
+                <button id="save-btn" class="btn btn-primary">Save</button>
+                <button id="cancel-btn" class="btn btn-secondary">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .modal-overlay.hidden { display: none; }
+        .modal-content {
+            background: var(--bg-white);
+            padding: 30px;
+            border-radius: var(--radius);
+            width: 400px;
+            max-width: 90%;
+        }
+    </style>
+
+    <script>
+        (function() {
+            var user = DB.users.getLoggedIn();
+            if (!user || user.role !== 'admin') {
+                window.location.href = '../login.html';
+                return;
+            }
+
+            var modal = document.getElementById('modal-overlay');
+            var nameInput = document.getElementById('category-name');
+            var errorAlert = document.getElementById('error-alert');
+            var successAlert = document.getElementById('success-alert');
+            var editingId = null;
+
+            function getCategories() {
+                return JSON.parse(localStorage.getItem('lms_categories')) || [];
+            }
+
+            function saveCategories(cats) {
+                localStorage.setItem('lms_categories', JSON.stringify(cats));
+            }
+
+            function renderCategories() {
+                var categories = getCategories();
+                var tbody = document.getElementById('categories-table');
+                var noCategories = document.getElementById('no-categories');
+                tbody.innerHTML = '';
+
+                if (categories.length === 0) {
+                    noCategories.classList.remove('hidden');
+                    return;
+                }
+
+                noCategories.classList.add('hidden');
+                categories.forEach(function(cat) {
+                    var row = document.createElement('tr');
+                    row.innerHTML = 
+                        '<td>' + cat.id + '</td>' +
+                        '<td><strong>' + cat.name + '</strong></td>' +
+                        '<td>' +
+                            '<button class="btn btn-outline edit-btn" data-id="' + cat.id + '" style="padding:5px 10px;">Edit</button> ' +
+                            '<button class="btn btn-danger delete-btn" data-id="' + cat.id + '" style="padding:5px 10px;">Delete</button>' +
+                        '</td>';
+                    tbody.appendChild(row);
+                });
+
+                // Attach edit handlers
+                document.querySelectorAll('.edit-btn').forEach(function(btn) {
+                    btn.addEventListener('click', function() {
+                        var id = parseInt(this.dataset.id);
+                        var cat = getCategories().find(function(c) { return c.id === id; });
+                        if (cat) {
+                            editingId = id;
+                            nameInput.value = cat.name;
+                            document.getElementById('modal-title').textContent = 'Edit Category';
+                            modal.classList.remove('hidden');
+                        }
+                    });
+                });
+
+                // Attach delete handlers
+                document.querySelectorAll('.delete-btn').forEach(function(btn) {
+                    btn.addEventListener('click', function() {
+                        var id = parseInt(this.dataset.id);
+                        if (confirm('Delete this category?')) {
+                            var cats = getCategories().filter(function(c) { return c.id !== id; });
+                            saveCategories(cats);
+                            showSuccess('Category deleted.');
+                            renderCategories();
+                        }
+                    });
+                });
+            }
+
+            function showError(msg) {
+                errorAlert.textContent = msg;
+                errorAlert.classList.remove('hidden');
+                setTimeout(function() { errorAlert.classList.add('hidden'); }, 3000);
+            }
+
+            function showSuccess(msg) {
+                successAlert.textContent = msg;
+                successAlert.classList.remove('hidden');
+                setTimeout(function() { successAlert.classList.add('hidden'); }, 3000);
+            }
+
+            // Add button
+            document.getElementById('add-btn').addEventListener('click', function() {
+                editingId = null;
+                nameInput.value = '';
+                document.getElementById('modal-title').textContent = 'Add Category';
+                modal.classList.remove('hidden');
+            });
+
+            // Cancel button
+            document.getElementById('cancel-btn').addEventListener('click', function() {
+                modal.classList.add('hidden');
+            });
+
+            // Save button
+            document.getElementById('save-btn').addEventListener('click', function() {
+                var name = nameInput.value.trim();
+                
+                if (!name) {
+                    showError('Category name cannot be empty.');
+                    return;
+                }
+
+                var categories = getCategories();
+
+                // Check duplicate (case-insensitive)
+                var duplicate = categories.find(function(c) {
+                    return c.name.toLowerCase() === name.toLowerCase() && c.id !== editingId;
+                });
+                if (duplicate) {
+                    showError('A category with this name already exists.');
+                    return;
+                }
+
+                if (editingId) {
+                    // Edit mode
+                    var idx = categories.findIndex(function(c) { return c.id === editingId; });
+                    categories[idx].name = name;
+                    showSuccess('Category updated.');
+                } else {
+                    // Create mode
+                    categories.push({ id: Date.now(), name: name });
+                    showSuccess('Category created.');
+                }
+
+                saveCategories(categories);
+                modal.classList.add('hidden');
+                renderCategories();
+            });
+
+            renderCategories();
+        })();
+    </script>
+</body>
+</html>

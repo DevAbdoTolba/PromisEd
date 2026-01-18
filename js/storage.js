@@ -14,6 +14,7 @@ const DB_KEYS = {
 
 // --- CONSTANTS ---
 const BLOCKLIST_URL = "https://raw.githubusercontent.com/disposable-email-domains/disposable-email-domains/master/disposable_email_blocklist.conf";
+const COURSES_API_URL = "https://api.npoint.io/8a22f3812bdf03c45a8e";
 const UPDATE_INTERVAL = 7 * 24 * 60 * 60 * 1000; // Update once a week
 
 // Hardcoded Fallback (The most common ones, just in case fetch fails)
@@ -83,30 +84,56 @@ const Serializer = {
 
 // --- PUBLIC API ---
 const DB = {
-    // ASYNC INITIALIZER (Fetches the latest spam list)
+    // ASYNC INITIALIZER (Fetches courses from API and spam list)
     init: async () => {
         // 1. Setup Tables
         if (!Serializer.read(DB_KEYS.USERS)) Serializer.write(DB_KEYS.USERS, []);
-        if (!Serializer.read(DB_KEYS.COURSES)) Serializer.write(DB_KEYS.COURSES, []);
         if (!Serializer.read(DB_KEYS.CATEGORIES)) Serializer.write(DB_KEYS.CATEGORIES, []);
 
-        // 2. High-End: Fetch Spam Blocklist from GitHub
-        const lastUpdate = parseInt(localStorage.getItem(DB_KEYS.BLOCKLIST_UPDATED) || "0");
-        const now = Date.now();
+        // 2. Fetch Courses from Mock API (only if courses are empty)
+        var existingCourses = Serializer.read(DB_KEYS.COURSES);
+        if (!existingCourses || existingCourses.length === 0) {
+            console.log("📚 Fetching courses from API...");
+            try {
+                var response = await fetch(COURSES_API_URL);
+                if (response.ok) {
+                    var courses = await response.json();
+                    Serializer.write(DB_KEYS.COURSES, courses);
+                    console.log("✅ Loaded " + courses.length + " courses from API.");
+                    
+                    // Extract unique categories from courses
+                    var catMap = {};
+                    courses.forEach(function(c) {
+                        if (c.categoryId && !catMap[c.categoryId]) {
+                            catMap[c.categoryId] = { id: c.categoryId, name: 'Category ' + c.categoryId };
+                        }
+                    });
+                    var categories = Object.values(catMap);
+                    if (categories.length > 0) {
+                        localStorage.setItem('lms_categories', JSON.stringify(categories));
+                    }
+                }
+            } catch (err) {
+                console.warn("⚠️ Could not fetch courses from API.", err);
+                Serializer.write(DB_KEYS.COURSES, []);
+            }
+        }
 
-        // Update if list is missing OR it's been more than 7 days
+        // 3. Fetch Spam Blocklist from GitHub
+        var lastUpdate = parseInt(localStorage.getItem(DB_KEYS.BLOCKLIST_UPDATED) || "0");
+        var now = Date.now();
+
         if (!Serializer.read(DB_KEYS.BLOCKLIST) || (now - lastUpdate > UPDATE_INTERVAL)) {
             console.log("⬇️ Downloading latest Anti-Spam Blocklist...");
             try {
-                const response = await fetch(BLOCKLIST_URL);
+                var response = await fetch(BLOCKLIST_URL);
                 if (response.ok) {
-                    const text = await response.text();
-                    // Parse text file (one domain per line)
-                    const domainList = text.split('\n').map(d => d.trim()).filter(d => d.length > 0);
+                    var text = await response.text();
+                    var domainList = text.split('\n').map(function(d) { return d.trim(); }).filter(function(d) { return d.length > 0; });
                     
                     Serializer.write(DB_KEYS.BLOCKLIST, domainList);
                     localStorage.setItem(DB_KEYS.BLOCKLIST_UPDATED, now.toString());
-                    console.log(`✅ Blocklist updated! Loaded ${domainList.length} blocked domains.`);
+                    console.log("✅ Blocklist updated! Loaded " + domainList.length + " blocked domains.");
                 }
             } catch (err) {
                 console.warn("⚠️ Could not fetch blocklist. Using fallback.", err);
@@ -166,7 +193,10 @@ const DB = {
 
         logout: () => {
             localStorage.removeItem(DB_KEYS.SESSION);
-            window.location.href = '../login.html';
+            // Detect base path for relative redirect
+            var path = window.location.pathname;
+            var base = (path.indexOf('/admin/') !== -1 || path.indexOf('/student/') !== -1) ? '../' : './';
+            window.location.href = base + 'login.html';
         }
     },
 

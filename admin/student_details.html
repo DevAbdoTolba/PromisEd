@@ -1,1 +1,183 @@
- 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="View and edit student details">
+    <title>Student Details - Admin | PromisEd</title>
+    <link rel="stylesheet" href="../css/global.css">
+    <link rel="stylesheet" href="../css/admin.css">
+</head>
+<body>
+    <script src="../js/storage.js"></script>
+    <script src="../js/navbar.js"></script>
+
+    <div class="container mt-3">
+        <a href="students.html" class="text-muted">&larr; Back to Students</a>
+
+        <div class="card mt-2">
+            <div class="clearfix">
+                <h1 style="float:left;" id="page-title">Student Details</h1>
+                <button id="delete-btn" class="btn btn-danger" style="float:right;">Delete Student</button>
+            </div>
+        </div>
+
+        <div id="error-alert" class="alert alert-danger hidden mt-2"></div>
+        <div id="success-alert" class="alert alert-success hidden mt-2"></div>
+
+        <form id="student-form" class="card mt-2">
+            <div class="row">
+                <div class="col col-6">
+                    <div class="form-group">
+                        <label for="name">Full Name</label>
+                        <input type="text" id="name" class="form-control" required minlength="3">
+                    </div>
+                </div>
+                <div class="col col-6">
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" class="form-control" required>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col col-6">
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="text" id="password" class="form-control" required minlength="8">
+                        <small class="text-muted">Min 8 characters</small>
+                    </div>
+                </div>
+                <div class="col col-6">
+                    <div class="form-group">
+                        <label for="role">Role</label>
+                        <select id="role" class="form-control">
+                            <option value="student">Student</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="status">Account Status</label>
+                <select id="status" class="form-control" style="max-width:200px;">
+                    <option value="active">Active</option>
+                    <option value="suspended">Suspended</option>
+                    <option value="banned">Banned</option>
+                </select>
+            </div>
+
+            <hr style="margin:20px 0;">
+
+            <h3 class="mb-2">Account Info</h3>
+            <p><strong>User ID:</strong> <span id="user-id">-</span></p>
+            <p><strong>Enrolled Courses:</strong> <span id="enrolled-count">0</span></p>
+            <p><strong>Wishlist Items:</strong> <span id="wishlist-count">0</span></p>
+
+            <hr style="margin:20px 0;">
+
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+            <a href="students.html" class="btn btn-secondary">Cancel</a>
+            <a href="" id="progress-link" class="btn btn-outline">View Progress</a>
+            <a href="" id="certs-link" class="btn btn-outline">View Certificates</a>
+        </form>
+    </div>
+
+    <script>
+        (function() {
+            var user = DB.users.getLoggedIn();
+            if (!user || user.role !== 'admin') {
+                window.location.href = '../login.html';
+                return;
+            }
+
+            var urlParams = new URLSearchParams(window.location.search);
+            var studentId = urlParams.get('id');
+
+            if (!studentId) {
+                window.location.href = 'students.html';
+                return;
+            }
+
+            var users = DB.users.getAll();
+            var student = users.find(function(u) { return u.id == studentId; });
+
+            if (!student) {
+                alert('Student not found');
+                window.location.href = 'students.html';
+                return;
+            }
+
+            var errorAlert = document.getElementById('error-alert');
+            var successAlert = document.getElementById('success-alert');
+
+            // Populate form
+            document.getElementById('page-title').textContent = student.name + ' - Details';
+            document.getElementById('name').value = student.name;
+            document.getElementById('email').value = student.email;
+            document.getElementById('password').value = student.password;
+            document.getElementById('role').value = student.role;
+            document.getElementById('status').value = student.status || 'active';
+            document.getElementById('user-id').textContent = student.id;
+            document.getElementById('enrolled-count').textContent = (student.enrolledCourses || []).length;
+            document.getElementById('wishlist-count').textContent = (student.wishlist || []).length;
+            document.getElementById('progress-link').href = 'student_progress.html?studentId=' + student.id;
+            document.getElementById('certs-link').href = 'student_certs.html?studentId=' + student.id;
+
+            // Form submit
+            document.getElementById('student-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                errorAlert.classList.add('hidden');
+                successAlert.classList.add('hidden');
+
+                var updatedStudent = {
+                    id: student.id,
+                    name: document.getElementById('name').value,
+                    email: document.getElementById('email').value,
+                    password: document.getElementById('password').value,
+                    role: document.getElementById('role').value,
+                    status: document.getElementById('status').value,
+                    enrolledCourses: student.enrolledCourses || [],
+                    wishlist: student.wishlist || []
+                };
+
+                // Validate email uniqueness (excluding current user)
+                var emailExists = users.find(function(u) {
+                    return u.email.toLowerCase() === updatedStudent.email.toLowerCase() && u.id !== student.id;
+                });
+                if (emailExists) {
+                    errorAlert.textContent = 'Email already exists for another user.';
+                    errorAlert.classList.remove('hidden');
+                    return;
+                }
+
+                // Save
+                var idx = users.findIndex(function(u) { return u.id === student.id; });
+                users[idx] = updatedStudent;
+                localStorage.setItem('users', JSON.stringify(users));
+
+                successAlert.textContent = 'Student updated successfully!';
+                successAlert.classList.remove('hidden');
+
+                // Update page title
+                document.getElementById('page-title').textContent = updatedStudent.name + ' - Details';
+            });
+
+            // Delete button
+            document.getElementById('delete-btn').addEventListener('click', function() {
+                if (confirm('Are you sure you want to delete this student? This action cannot be undone.')) {
+                    var idx = users.findIndex(function(u) { return u.id == studentId; });
+                    if (idx !== -1) {
+                        users.splice(idx, 1);
+                        localStorage.setItem('users', JSON.stringify(users));
+                        alert('Student deleted.');
+                        window.location.href = 'students.html';
+                    }
+                }
+            });
+        })();
+    </script>
+</body>
+</html>
