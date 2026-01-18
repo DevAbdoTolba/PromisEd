@@ -1,1 +1,178 @@
- 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Watch course lessons and track your progress">
+    <title>Course Player - PromisEd</title>
+    <link rel="stylesheet" href="../css/global.css">
+    <link rel="stylesheet" href="../css/student.css">
+</head>
+<body>
+    <script src="../js/storage.js"></script>
+    <script src="../js/navbar.js"></script>
+
+    <div class="player-layout">
+        <aside class="player-sidebar">
+            <h2 id="course-title">Course</h2>
+            <div class="progress-bar mt-1 mb-2">
+                <div class="progress-fill" id="progress-bar" style="width:0%;"></div>
+            </div>
+            <p class="text-muted mb-2" id="progress-text">0% complete</p>
+            
+            <nav id="lesson-list" class="lesson-list"></nav>
+            
+            <div class="mt-2" id="complete-section" style="display:none;">
+                <a href="" id="certificate-link" class="btn btn-success" style="width:100%;">Get Certificate</a>
+                <a href="" id="feedback-link" class="btn btn-outline mt-1" style="width:100%;">Leave Feedback</a>
+            </div>
+        </aside>
+        
+        <main class="player-main">
+            <div class="video-container">
+                <iframe id="video-frame" src="" allowfullscreen></iframe>
+            </div>
+            
+            <div class="lesson-info mt-2">
+                <h2 id="lesson-title">Select a lesson</h2>
+                <div class="lesson-actions mt-2">
+                    <button id="complete-btn" class="btn btn-primary" disabled>Mark as Complete & Next</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        (function() {
+            var user = DB.users.getLoggedIn();
+            if (!user) {
+                window.location.href = '../login.html';
+                return;
+            }
+
+            var urlParams = new URLSearchParams(window.location.search);
+            var courseId = urlParams.get('id');
+
+            if (!courseId) {
+                alert('Invalid course ID');
+                window.location.href = 'dashboard.html';
+                return;
+            }
+
+            var course = DB.courses.getById(courseId);
+            if (!course) {
+                alert('Course not found');
+                window.location.href = 'dashboard.html';
+                return;
+            }
+
+            // Check enrollment
+            var enrollment = user.enrolledCourses.find(function(e) { return e.courseId == courseId; });
+            if (!enrollment) {
+                alert('You are not enrolled in this course');
+                window.location.href = 'catalog.html';
+                return;
+            }
+
+            var currentLessonIndex = 0;
+            var lessons = course.lessons || [];
+            var completedLessons = enrollment.completedLessons || [];
+
+            document.getElementById('course-title').textContent = course.title;
+            document.getElementById('certificate-link').href = 'certificate.html?course=' + course.id;
+            document.getElementById('feedback-link').href = 'feedback.html?course=' + course.id;
+
+            // Render lesson list
+            var lessonList = document.getElementById('lesson-list');
+            lessons.forEach(function(lesson, index) {
+                var isCompleted = completedLessons.includes(lesson.id);
+                var item = document.createElement('a');
+                item.href = '#';
+                item.className = 'lesson-item' + (isCompleted ? ' completed' : '');
+                item.dataset.index = index;
+                item.innerHTML = '<span class="lesson-number">' + (index + 1) + '</span>' +
+                                 '<span class="lesson-name">' + lesson.title + '</span>' +
+                                 (isCompleted ? '<span class="lesson-check">✓</span>' : '');
+                item.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    loadLesson(index);
+                });
+                lessonList.appendChild(item);
+            });
+
+            function loadLesson(index) {
+                currentLessonIndex = index;
+                var lesson = lessons[index];
+                
+                document.getElementById('video-frame').src = lesson.videoUrl;
+                document.getElementById('lesson-title').textContent = lesson.title;
+                
+                // Highlight active
+                var items = lessonList.querySelectorAll('.lesson-item');
+                items.forEach(function(item, i) {
+                    item.classList.toggle('active', i === index);
+                });
+                
+                // Update button state
+                var isCompleted = completedLessons.includes(lesson.id);
+                var btn = document.getElementById('complete-btn');
+                btn.disabled = isCompleted;
+                btn.textContent = isCompleted ? 'Completed ✓' : 'Mark as Complete & Next';
+            }
+
+            function updateProgress() {
+                var progress = Math.round((completedLessons.length / lessons.length) * 100);
+                document.getElementById('progress-bar').style.width = progress + '%';
+                document.getElementById('progress-text').textContent = progress + '% complete';
+                
+                // Update enrollment in DB
+                var users = DB.users.getAll();
+                var userIndex = users.findIndex(function(u) { return u.id === user.id; });
+                var enrollIndex = users[userIndex].enrolledCourses.findIndex(function(e) { return e.courseId == courseId; });
+                
+                users[userIndex].enrolledCourses[enrollIndex].progress = progress;
+                users[userIndex].enrolledCourses[enrollIndex].completedLessons = completedLessons;
+                
+                localStorage.setItem('users', JSON.stringify(users));
+                
+                // Show certificate section if 100%
+                if (progress >= 100) {
+                    document.getElementById('complete-section').style.display = 'block';
+                }
+            }
+
+            document.getElementById('complete-btn').addEventListener('click', function() {
+                var lesson = lessons[currentLessonIndex];
+                
+                if (!completedLessons.includes(lesson.id)) {
+                    completedLessons.push(lesson.id);
+                    
+                    // Update UI
+                    var items = lessonList.querySelectorAll('.lesson-item');
+                    items[currentLessonIndex].classList.add('completed');
+                    items[currentLessonIndex].innerHTML = 
+                        '<span class="lesson-number">' + (currentLessonIndex + 1) + '</span>' +
+                        '<span class="lesson-name">' + lesson.title + '</span>' +
+                        '<span class="lesson-check">✓</span>';
+                    
+                    updateProgress();
+                }
+                
+                // Go to next lesson
+                if (currentLessonIndex < lessons.length - 1) {
+                    loadLesson(currentLessonIndex + 1);
+                } else {
+                    this.disabled = true;
+                    this.textContent = 'Course Complete!';
+                }
+            });
+
+            // Load first incomplete or first lesson
+            var firstIncomplete = lessons.findIndex(function(l) { return !completedLessons.includes(l.id); });
+            loadLesson(firstIncomplete >= 0 ? firstIncomplete : 0);
+            updateProgress();
+        })();
+    </script>
+</body>
+</html>
+

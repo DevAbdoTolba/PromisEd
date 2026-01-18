@@ -3,164 +3,117 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Feedback - PromisEd</title>
+    <meta name="description" content="Share your feedback about the course">
+    <title>Course Feedback - PromisEd</title>
     <link rel="stylesheet" href="../css/global.css">
-    <link rel="stylesheet" href="../css/feedback.css">
+    <link rel="stylesheet" href="../css/student.css">
 </head>
 <body>
-    <div class="page-wrapper">
-        <div class="feedback-card">
-            <div class="feedback-header">
-                <div class="header-left">
-                    <span class="feedback-icon">💬</span>
-                    <span class="header-title">Feedback</span>
-                </div>
-                <button class="close-btn" id="closeBtn">&times;</button>
+    <script src="../js/storage.js"></script>
+    <script src="../js/navbar.js"></script>
+
+    <div class="container mt-3">
+        <a href="dashboard.html" class="text-muted">&larr; Back to Dashboard</a>
+        
+        <div class="card mt-2" style="max-width:600px;margin-left:auto;margin-right:auto;">
+            <h1>Course Feedback</h1>
+            <p id="course-name" class="text-muted mb-2">Help us improve by sharing your experience</p>
+
+            <div id="success-msg" class="alert alert-success hidden">
+                Thank you for your feedback! Your response has been recorded.
             </div>
 
-            <div class="divider"></div>
-
-            <div class="feedback-content">
-                <h1 class="main-title">How are you feeling?</h1>
-                <p class="subtitle">Your input is valuable in helping us better understand your needs and tailor our service accordingly.</p>
-
-                <div class="rating-section">
-                    <div class="rating-options" id="ratingOptions">
-                        <div class="rating-item" data-value="1" data-label="Very Bad">
-                            <div class="rating-circle">1</div>
-                        </div>
-                        <div class="rating-item" data-value="2" data-label="Bad">
-                            <div class="rating-circle">2</div>
-                        </div>
-                        <div class="rating-item" data-value="3" data-label="Medium">
-                            <div class="rating-circle">3</div>
-                        </div>
-                        <div class="rating-item" data-value="4" data-label="Good">
-                            <div class="rating-circle">4</div>
-                        </div>
-                        <div class="rating-item" data-value="5" data-label="Excellent">
-                            <div class="rating-circle">5</div>
-                        </div>
+            <form id="feedback-form">
+                <div class="form-group">
+                    <label>How would you rate this course?</label>
+                    <div class="rating-group">
+                        <label class="rating-option">
+                            <input type="radio" name="rating" value="5" required> ⭐⭐⭐⭐⭐ Excellent
+                        </label>
+                        <label class="rating-option">
+                            <input type="radio" name="rating" value="4"> ⭐⭐⭐⭐ Good
+                        </label>
+                        <label class="rating-option">
+                            <input type="radio" name="rating" value="3"> ⭐⭐⭐ Average
+                        </label>
+                        <label class="rating-option">
+                            <input type="radio" name="rating" value="2"> ⭐⭐ Below Average
+                        </label>
+                        <label class="rating-option">
+                            <input type="radio" name="rating" value="1"> ⭐ Poor
+                        </label>
                     </div>
-                    <div class="tooltip" id="tooltip"></div>
                 </div>
 
-                <div class="comment-section">
-                    <textarea id="commentBox" placeholder="Add a Comment..." rows="4"></textarea>
+                <div class="form-group">
+                    <label for="comments">Additional Comments</label>
+                    <textarea id="comments" class="form-control" rows="4" 
+                              placeholder="What did you like? What could be improved?"></textarea>
                 </div>
 
-                <button class="submit-btn" id="submitBtn">Submit Now</button>
-            </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="recommend"> 
+                        I would recommend this course to others
+                    </label>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Submit Feedback</button>
+            </form>
         </div>
     </div>
-<!-- get the storage.js file to use the DB object -->
-    <script src="../js/storage.js"></script>
+
     <script>
-// check if the user is logged in
-        (() => {
-            const user = DB.users.getLoggedIn();
-            const urlParams = new URLSearchParams(window.location.search);
-            const courseId = urlParams.get('courseId'); 
-// if the user is not logged in, show an alert and redirect to the login page
+        (function() {
+            var user = DB.users.getLoggedIn();
             if (!user) {
-                alert('Please log in to access this page.');
                 window.location.href = '../login.html';
                 return;
             }
 
-// if the courseId is not found, show an alert and redirect to the dashboard
+            var urlParams = new URLSearchParams(window.location.search);
+            var courseId = urlParams.get('course');
+
             if (!courseId) {
-                alert('Invalid access. No course specified.');
                 window.location.href = 'dashboard.html';
                 return;
             }
 
-// if the user is not enrolled in the course, show an alert and redirect to the dashboard
-            const enrollment = user.enrolledCourses.find(c => c.courseId == courseId);
-            if (!enrollment) {
-                alert('You are not enrolled in this course.');
-                window.location.href = 'dashboard.html';
-                return;
-            }
-// the validation for the progress of the course must be 100%
-            if (enrollment.progress !== 100) {
-                alert('You must complete the course before providing feedback.');
-                window.location.href = `course_player.html?courseId=${courseId}`;
-                return;
-            }
-// store the courseId and the user in the window object
-            window.currentCourseId = courseId;
-            window.currentUser = user;
-        })();
-
-        // only initialize the UI if validation passed (window.currentUser is set)
-        if (window.currentUser) {
-// get the rating options from the DOM
-            const ratingOptions = document.getElementById('ratingOptions');
-            const ratingItems = document.querySelectorAll('.rating-item');
-            const tooltip = document.getElementById('tooltip');
-            let selectedRating = null;
-
-// add a click event to each rating item
-            for (const item of ratingItems) {
-                item.addEventListener('click', () => {
-                    const value = item.getAttribute('data-value');
-                    const label = item.getAttribute('data-label');
-                    
-// remove the selected class from all rating items
-                    for (const otherItem of ratingItems) {
-                        otherItem.classList.remove('selected');
-                    }
-                    
-// add the selected class to the clicked rating item
-                    item.classList.add('selected');
-                    selectedRating = value;
-// show the tooltip with the label
-                    tooltip.textContent = label;
-                    tooltip.classList.add('visible');
-// position the tooltip under the selected rating item
-
-                    const rect = item.getBoundingClientRect();
-                    const parentRect = ratingOptions.getBoundingClientRect();
-                    tooltip.style.left = `${rect.left - parentRect.left + rect.width / 2}px`;
-                });
+            var course = DB.courses.getById(courseId);
+            if (course) {
+                document.getElementById('course-name').textContent = 'Feedback for: ' + course.title;
             }
 
-            const submitBtn = document.getElementById('submitBtn');
-            const commentBox = document.getElementById('commentBox');
-
-            submitBtn.addEventListener('click', () => {
-                if (!selectedRating) {
-                    alert('Please select a rating before submitting.');
-                    return;
-                }
-// build the feedback data object
-                const feedbackData = {
-                    courseId: window.currentCourseId,
-                    rating: parseInt(selectedRating),
-                    comment: commentBox.value.trim(),
-                    timestamp: Date.now(),
-                    userId: window.currentUser.id
-                };
-// save the feedback to the database using DB.feedback.add()
-                const result = DB.feedback.add(feedbackData);
+            document.getElementById('feedback-form').addEventListener('submit', function(e) {
+                e.preventDefault();
                 
-                if (result.success) {
-                    console.log('Feedback saved:', result.feedback);
-                    alert('Thank you for your feedback!');
-                    window.location.href = `certificate.html?courseId=${window.currentCourseId}`;
-                } else {
-                    // handle error (e.g., already submitted feedback)
-                    alert(result.message);
+                var feedback = {
+                    id: Date.now(),
+                    userId: user.id,
+                    userName: user.name,
+                    rating: parseInt(document.querySelector('input[name="rating"]:checked').value),
+                    comments: document.getElementById('comments').value,
+                    recommend: document.getElementById('recommend').checked,
+                    timestamp: new Date().toISOString()
+                };
+                
+                // Save feedback to course object
+                var courses = DB.courses.getAll();
+                var courseIdx = courses.findIndex(function(c) { return c.id == courseId; });
+                
+                if (courseIdx !== -1) {
+                    if (!courses[courseIdx].feedback) {
+                        courses[courseIdx].feedback = [];
+                    }
+                    courses[courseIdx].feedback.push(feedback);
+                    localStorage.setItem('courses', JSON.stringify(courses));
+                    console.log('Feedback saved to course:', feedback);
                 }
+                
+                this.style.display = 'none';
+                document.getElementById('success-msg').classList.remove('hidden');
             });
-
-//add close button event listener to redirect to the course player page
-            const closeBtn = document.getElementById('closeBtn');
-            closeBtn.addEventListener('click', () => {
-                window.location.href = `course_player.html?courseId=${window.currentCourseId}`;
-            });
-        }
+        })();
     </script>
 </body>
 </html>

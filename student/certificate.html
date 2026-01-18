@@ -3,176 +3,100 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Your course completion certificate">
     <title>Certificate - PromisEd</title>
     <link rel="stylesheet" href="../css/global.css">
-    <link rel="stylesheet" href="../css/certificate.css">
+    <link rel="stylesheet" href="../css/student.css">
+    <style>
+        @media print {
+            .no-print, .main-nav { display: none !important; }
+            .certificate { box-shadow: none !important; margin: 0 !important; }
+            .container { padding: 0 !important; margin: 0 !important; max-width: 100% !important; }
+            body { background: white !important; }
+        }
+    </style>
 </head>
 <body>
-    <div class="page-wrapper">
-        
-        <div class="action-bar">
-            <button class="action-btn" id="downloadBtn">
-                <span class="btn-icon">⬇</span>
-                Download PDF
-            </button>
-            <button class="action-btn secondary" id="backBtn">
-                <span class="btn-icon">←</span>
-                Back to Dashboard
-            </button>
+    <script src="../js/storage.js"></script>
+    <script src="../js/navbar.js"></script>
+
+    <div class="container mt-3">
+        <div class="no-print mb-2">
+            <a href="dashboard.html" class="text-muted">&larr; Back to Dashboard</a>
         </div>
 
-        <div class="certificate-frame" id="certificateFrame">
-            <div class="certificate">
-                <div class="certificate-border">
-                    <div class="corner-decoration top-left"></div>
-                    <div class="corner-decoration top-right"></div>
-                    <div class="corner-decoration bottom-left"></div>
-                    <div class="corner-decoration bottom-right"></div>
-                </div>
-
-                <div class="certificate-content">
-                    <div class="certificate-logo">
-                        <span class="logo-icon">🎓</span>
-                        <span class="logo-text">PromisEd</span>
+        <div class="certificate" id="certificate">
+            <div class="cert-border">
+                <div class="cert-inner">
+                    <div class="cert-logo">🎓</div>
+                    <h1 class="cert-title">Certificate of Completion</h1>
+                    <p class="cert-subtitle">This is to certify that</p>
+                    <h2 class="cert-name" id="cert-name">Student Name</h2>
+                    <p class="cert-text">has successfully completed the course</p>
+                    <h3 class="cert-course" id="cert-course">Course Title</h3>
+                    <p class="cert-text">on PromisEd Learning Platform</p>
+                    <div class="cert-date">
+                        <span id="cert-date">Date</span>
                     </div>
-
-                    <h1 class="certificate-title">Certificate of Completion</h1>
-                    
-                    <p class="certificate-subtitle">This is to certify that</p>
-
-                    <h2 class="student-name" id="studentName">Loading...</h2>
-
-                    <p class="certificate-text">has successfully completed the course</p>
-
-                    <h3 class="course-title" id="courseTitle">Loading...</h3>
-
-                    <p class="certificate-text">with a completion rate of <strong>100%</strong></p>
-
-                    <div class="certificate-footer">
-                        <div class="footer-item">
-                            <div class="signature-line"></div>
-                            <p class="footer-label">Date of Completion</p>
-                            <p class="footer-value" id="completionDate">Loading...</p>
-                        </div>
-                        <div class="footer-item">
-                            <div class="signature-line"></div>
-                            <p class="footer-label">Certificate ID</p>
-                            <p class="footer-value" id="certificateId">Loading...</p>
-                        </div>
-                    </div>
-
-                    <div class="certificate-seal">
-                        <div class="seal-inner">
-                            <span class="seal-icon">✓</span>
-                            <span class="seal-text">VERIFIED</span>
-                        </div>
+                    <div class="cert-signature">
+                        <div class="cert-sig-line"></div>
+                        <p>Platform Director</p>
                     </div>
                 </div>
             </div>
         </div>
+
+        <div class="text-center mt-2 no-print">
+            <button onclick="window.print()" class="btn btn-primary">Print Certificate</button>
+            <a href="dashboard.html" class="btn btn-secondary">Back to Dashboard</a>
+        </div>
     </div>
 
-    <script src="../js/storage.js"></script>
     <script>
-    // check if the user is logged in
-        (() => {
-            const user = DB.users.getLoggedIn();
-            const urlParams = new URLSearchParams(window.location.search);
-            const courseId = urlParams.get('courseId');
-// if the user is not logged in, show an alert and redirect to the login page
+        (function() {
+            var user = DB.users.getLoggedIn();
             if (!user) {
-                alert('Please log in to view your certificate.');
                 window.location.href = '../login.html';
                 return;
             }
-// if the courseId is not found, show an alert and redirect to the dashboard
+
+            var urlParams = new URLSearchParams(window.location.search);
+            var courseId = urlParams.get('course');
+
             if (!courseId) {
-                alert('Invalid access. No course specified.');
+                alert('Invalid certificate request');
                 window.location.href = 'dashboard.html';
                 return;
             }
-// if the user is not enrolled in the course, show an alert and redirect to the dashboard
-            const enrollment = user.enrolledCourses.find(c => c.courseId == courseId);
-            if (!enrollment) {
-                alert('You are not enrolled in this course.');
+
+            // Security Check: Verify course completion
+            var enrollment = user.enrolledCourses.find(function(e) { return e.courseId == courseId; });
+            
+            if (!enrollment || enrollment.progress < 100) {
+                alert('You must complete the course to view the certificate.');
                 window.location.href = 'dashboard.html';
                 return;
             }
-// the validation for the progress of the course must be 100%
-            if (enrollment.progress !== 100) {
-                alert('Access denied. You must complete the course (100%) to view the certificate.');
-                window.location.href = `course_player.html?courseId=${courseId}`;
+
+            var course = DB.courses.getById(courseId);
+            if (!course) {
+                alert('Course not found');
+                window.location.href = 'dashboard.html';
                 return;
             }
-// store the data for rendering
-            window.currentUser = user;
-            window.currentCourseId = courseId;
-            window.currentEnrollment = enrollment;
+
+            // Populate certificate
+            document.getElementById('cert-name').textContent = user.name;
+            document.getElementById('cert-course').textContent = course.title;
+            
+            var today = new Date();
+            var dateStr = today.toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+            document.getElementById('cert-date').textContent = dateStr;
         })();
-
-        // function to generate a deterministic hash from a string
-        // this ensures the same input always produces the same output
-        const generateHash = (str) => {
-            let hash = 0;
-            for (let i = 0; i < str.length; i++) {
-                const char = str.charCodeAt(i);
-                hash = ((hash << 5) - hash) + char;
-                hash = hash & hash; // convert to 32-bit integer
-            }
-            return Math.abs(hash).toString(36).toUpperCase();
-        };
-
-        // function to render the certificate
-        const renderCertificate = () => {
-            const user = window.currentUser;
-            const courseId = window.currentCourseId;
-            const enrollment = window.currentEnrollment;
-
-            // get the course details from the DB
-            const course = DB.courses.getById(courseId);
-
-            // populate the student name
-            const studentNameEl = document.getElementById('studentName');
-            studentNameEl.textContent = user.name;
-
-            // get the course title from the course object
-            const courseTitleEl = document.getElementById('courseTitle');
-            courseTitleEl.textContent = course ? course.title : 'Course Completed';
-
-            // generate the completion date
-            // completedAt is set by DB.student.updateProgress() when progress reaches 100%
-            // fallback to current date only for legacy enrollments without completedAt
-            const completionDateEl = document.getElementById('completionDate');
-            const completionTimestamp = enrollment.completedAt || Date.now();
-            const completionDate = new Date(completionTimestamp);
-            const options = { year: 'numeric', month: 'long', day: 'numeric' };
-            completionDateEl.textContent = completionDate.toLocaleDateString('en-US', options);
-
-            // generate a deterministic certificate ID
-            const certificateIdEl = document.getElementById('certificateId');
-            const uniqueString = `${user.id}-${courseId}-${user.email}`;
-            const hashPart = generateHash(uniqueString);
-            const certId = `CERT-${user.id}-${courseId}-${hashPart}`; 
-            certificateIdEl.textContent = certId;
-        };
-// execute rendering only if validation passed
-// (window.currentUser is only set when all validation checks succeed)
-        if (window.currentUser) {
-            renderCertificate();
-        }   
-        // action buttons
-        const downloadBtn = document.getElementById('downloadBtn');
-        const backBtn = document.getElementById('backBtn');
-
-        // download handler - opens the print dialog for the PDF
-        downloadBtn.addEventListener('click', () => {
-            window.print();
-        });
-
-        // back to dashboard handler - redirects to the dashboard page
-        backBtn.addEventListener('click', () => {
-            window.location.href = 'dashboard.html';
-        });
     </script>
 </body>
 </html>
