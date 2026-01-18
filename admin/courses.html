@@ -1,1 +1,93 @@
- 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Manage all courses on PromisEd">
+    <title>Courses - Admin | PromisEd</title>
+    <link rel="stylesheet" href="../css/global.css">
+    <link rel="stylesheet" href="../css/admin.css">
+</head>
+<body>
+    <script src="../js/storage.js"></script>
+    <script src="../js/navbar.js"></script>
+
+    <div class="container mt-3">
+        <div class="clearfix mb-2">
+            <h1 style="float:left;">Manage Courses</h1>
+            <a href="course_editor.html" class="btn btn-primary" style="float:right;">+ New Course</a>
+        </div>
+
+        <div class="card">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Title</th>
+                        <th>Price</th>
+                        <th>Status</th>
+                        <th>Lessons</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="courses-table"></tbody>
+            </table>
+            <p id="no-courses" class="text-muted text-center hidden">No courses created yet.</p>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            var user = DB.users.getLoggedIn();
+            if (!user || user.role !== 'admin') {
+                window.location.href = '../login.html';
+                return;
+            }
+
+            var courses = DB.courses.getAll();
+            var tbody = document.getElementById('courses-table');
+            var noCourses = document.getElementById('no-courses');
+
+            if (courses.length === 0) {
+                noCourses.classList.remove('hidden');
+            } else {
+                renderCourses();
+            }
+
+            function renderCourses() {
+                courses = DB.courses.getAll();
+                tbody.innerHTML = '';
+                
+                courses.forEach(function(course) {
+                    var row = document.createElement('tr');
+                    var statusClass = course.status === 'approved' ? 'text-success' : 'text-muted';
+                    row.innerHTML = 
+                        '<td>' + course.id + '</td>' +
+                        '<td><strong>' + course.title + '</strong></td>' +
+                        '<td>$' + course.price + '</td>' +
+                        '<td class="' + statusClass + '">' + course.status + '</td>' +
+                        '<td>' + (course.lessons ? course.lessons.length : 0) + '</td>' +
+                        '<td>' +
+                            '<a href="course_editor.html?id=' + course.id + '" class="btn btn-outline" style="padding:5px 10px;">Edit</a> ' +
+                            '<button class="btn btn-danger delete-course" data-id="' + course.id + '" style="padding:5px 10px;">Delete</button>' +
+                        '</td>';
+                    tbody.appendChild(row);
+                });
+
+                // Attach delete handlers
+                document.querySelectorAll('.delete-course').forEach(function(btn) {
+                    btn.addEventListener('click', function() {
+                        var courseId = parseInt(this.dataset.id);
+                        if (confirm('Delete this course? This cannot be undone.')) {
+                            var allCourses = DB.courses.getAll();
+                            var filtered = allCourses.filter(function(c) { return c.id !== courseId; });
+                            localStorage.setItem('courses', JSON.stringify(filtered));
+                            renderCourses();
+                        }
+                    });
+                });
+            }
+        })();
+    </script>
+</body>
+</html>

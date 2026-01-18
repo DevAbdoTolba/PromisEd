@@ -1,1 +1,283 @@
- 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Create or edit courses on PromisEd">
+    <title>Course Editor - Admin | PromisEd</title>
+    <link rel="stylesheet" href="../css/global.css">
+    <link rel="stylesheet" href="../css/admin.css">
+</head>
+<body>
+    <script src="../js/storage.js"></script>
+    <script src="../js/navbar.js"></script>
+
+    <div class="container mt-3">
+        <h1 id="page-title">Create New Course</h1>
+        <p class="text-muted mb-2">Fill in the course details below</p>
+
+        <div id="error-alert" class="alert alert-danger hidden"></div>
+        <div id="success-alert" class="alert alert-success hidden"></div>
+
+        <form id="course-form" class="card">
+            <input type="hidden" id="course-id">
+
+            <div class="row">
+                <div class="col col-8">
+                    <div class="form-group">
+                        <label for="title">Course Title</label>
+                        <input type="text" id="title" class="form-control" 
+                               placeholder="e.g., Introduction to JavaScript" required minlength="5">
+                        <span class="error-msg">Title must be at least 5 characters</span>
+                    </div>
+                </div>
+                <div class="col col-4">
+                    <div class="form-group">
+                        <label for="price">Price ($)</label>
+                        <input type="number" id="price" class="form-control" 
+                               placeholder="0" required min="0" step="1">
+                        <span class="error-msg">Price must be 0 or higher</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col col-6">
+                    <div class="form-group">
+                        <label for="status">Status</label>
+                        <select id="status" class="form-control" required>
+                            <option value="draft">Draft</option>
+                            <option value="approved">Approved (Published)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col col-6">
+                    <div class="form-group">
+                        <label for="category">Category</label>
+                        <select id="category" class="form-control" required>
+                            <!-- Populated dynamically -->
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="description">Description</label>
+                <textarea id="description" class="form-control" rows="3" 
+                          placeholder="Brief description of the course"></textarea>
+            </div>
+
+            <hr style="margin: 25px 0; border: none; border-top: 1px solid var(--border-color);">
+
+            <h3 class="mb-2">Lessons</h3>
+            <div id="lessons-container"></div>
+            <button type="button" id="add-lesson-btn" class="btn btn-outline mb-2">+ Add Lesson</button>
+
+            <hr style="margin: 25px 0; border: none; border-top: 1px solid var(--border-color);">
+
+            <!-- Feedback Section (only shown in edit mode) -->
+            <div id="feedback-section" class="hidden">
+                <h3 class="mb-2">Course Feedback</h3>
+                <div id="feedback-list"></div>
+                <p id="no-feedback" class="text-muted hidden">No feedback submitted yet.</p>
+                <hr style="margin: 25px 0; border: none; border-top: 1px solid var(--border-color);">
+            </div>
+
+            <button type="submit" class="btn btn-primary">Save Course</button>
+            <a href="courses.html" class="btn btn-secondary">Cancel</a>
+        </form>
+    </div>
+
+    <script>
+        (function() {
+            // Check admin access
+            var user = DB.users.getLoggedIn();
+            if (!user || user.role !== 'admin') {
+                window.location.href = '../login.html';
+                return;
+            }
+
+            var lessonCount = 0;
+            var lessonsContainer = document.getElementById('lessons-container');
+            var form = document.getElementById('course-form');
+            var errorAlert = document.getElementById('error-alert');
+            var successAlert = document.getElementById('success-alert');
+
+            // Populate category dropdown
+            var categorySelect = document.getElementById('category');
+            var categories = JSON.parse(localStorage.getItem('lms_categories')) || [];
+            if (categories.length === 0) {
+                categories = [{ id: 1, name: 'Development' }, { id: 2, name: 'Design' }, { id: 3, name: 'Marketing' }, { id: 4, name: 'Business' }];
+            }
+            categories.forEach(function(cat) {
+                var opt = document.createElement('option');
+                opt.value = cat.id;
+                opt.textContent = cat.name;
+                categorySelect.appendChild(opt);
+            });
+
+            // Add Lesson Template
+            function addLesson(lesson) {
+                lessonCount++;
+                var div = document.createElement('div');
+                div.className = 'lesson-item card';
+                div.innerHTML = 
+                    '<div class="row">' +
+                        '<div class="col col-5">' +
+                            '<div class="form-group">' +
+                                '<label>Lesson ' + lessonCount + ' Title</label>' +
+                                '<input type="text" class="form-control lesson-title" ' +
+                                       'placeholder="e.g., Getting Started" required minlength="3" ' +
+                                       'value="' + (lesson ? lesson.title : '') + '">' +
+                            '</div>' +
+                        '</div>' +
+                        '<div class="col col-6">' +
+                            '<div class="form-group">' +
+                                '<label>Video URL</label>' +
+                                '<input type="url" class="form-control lesson-video" ' +
+                                       'placeholder="https://youtube.com/embed/..." required ' +
+                                       'value="' + (lesson ? lesson.videoUrl : '') + '">' +
+                            '</div>' +
+                        '</div>' +
+                        '<div class="col col-1">' +
+                            '<button type="button" class="btn btn-danger remove-lesson" style="margin-top:28px;">X</button>' +
+                        '</div>' +
+                    '</div>';
+                lessonsContainer.appendChild(div);
+
+                div.querySelector('.remove-lesson').addEventListener('click', function() {
+                    div.remove();
+                    renumberLessons();
+                });
+            }
+
+            function renumberLessons() {
+                var items = lessonsContainer.querySelectorAll('.lesson-item');
+                lessonCount = 0;
+                items.forEach(function(item) {
+                    lessonCount++;
+                    item.querySelector('label').textContent = 'Lesson ' + lessonCount + ' Title';
+                });
+            }
+
+            document.getElementById('add-lesson-btn').addEventListener('click', function() {
+                addLesson(null);
+            });
+
+            // Check for Edit Mode
+            var urlParams = new URLSearchParams(window.location.search);
+            var editId = urlParams.get('id');
+            
+            if (editId) {
+                var course = DB.courses.getById(editId);
+                if (course) {
+                    document.getElementById('page-title').textContent = 'Edit Course';
+                    document.getElementById('course-id').value = course.id;
+                    document.getElementById('title').value = course.title;
+                    document.getElementById('price').value = course.price;
+                    document.getElementById('status').value = course.status;
+                    document.getElementById('category').value = course.categoryId || 1;
+                    document.getElementById('description').value = course.description || '';
+                    
+                    // Load existing lessons
+                    if (course.lessons && course.lessons.length > 0) {
+                        course.lessons.forEach(function(lesson) {
+                            addLesson(lesson);
+                        });
+                    }
+
+                    // Show feedback section
+                    var feedbackSection = document.getElementById('feedback-section');
+                    var feedbackList = document.getElementById('feedback-list');
+                    var noFeedback = document.getElementById('no-feedback');
+                    feedbackSection.classList.remove('hidden');
+                    
+                    if (course.feedback && course.feedback.length > 0) {
+                        course.feedback.forEach(function(fb) {
+                            var stars = '⭐'.repeat(fb.rating);
+                            var date = new Date(fb.timestamp).toLocaleDateString();
+                            var div = document.createElement('div');
+                            div.className = 'feedback-item';
+                            div.innerHTML = 
+                                '<div class="clearfix">' +
+                                    '<strong style="float:left;">' + (fb.userName || 'Anonymous') + '</strong>' +
+                                    '<span style="float:right;" class="text-muted">' + date + '</span>' +
+                                '</div>' +
+                                '<div class="mt-1">' + stars + ' (' + fb.rating + '/5)</div>' +
+                                (fb.comments ? '<p class="mt-1">' + fb.comments + '</p>' : '') +
+                                (fb.recommend ? '<small class="text-success">✓ Would recommend</small>' : '');
+                            feedbackList.appendChild(div);
+                        });
+                    } else {
+                        noFeedback.classList.remove('hidden');
+                    }
+                }
+            } else {
+                // Start with one empty lesson
+                addLesson(null);
+            }
+
+            // Form Submit
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                errorAlert.classList.add('hidden');
+                successAlert.classList.add('hidden');
+
+                // Gather lessons
+                var lessons = [];
+                var lessonItems = lessonsContainer.querySelectorAll('.lesson-item');
+                
+                for (var i = 0; i < lessonItems.length; i++) {
+                    var title = lessonItems[i].querySelector('.lesson-title').value;
+                    var videoUrl = lessonItems[i].querySelector('.lesson-video').value;
+                    
+                    if (!title || title.length < 3) {
+                        errorAlert.textContent = 'Lesson ' + (i+1) + ' title must be at least 3 characters.';
+                        errorAlert.classList.remove('hidden');
+                        return;
+                    }
+                    if (!videoUrl) {
+                        errorAlert.textContent = 'Lesson ' + (i+1) + ' requires a video URL.';
+                        errorAlert.classList.remove('hidden');
+                        return;
+                    }
+                    
+                    lessons.push({
+                        id: 'l_' + (i + 1),
+                        title: title,
+                        videoUrl: videoUrl
+                    });
+                }
+
+                var courseData = {
+                    title: document.getElementById('title').value,
+                    price: parseInt(document.getElementById('price').value, 10),
+                    status: document.getElementById('status').value,
+                    categoryId: parseInt(document.getElementById('category').value, 10),
+                    description: document.getElementById('description').value,
+                    lessons: lessons
+                };
+
+                // Add ID for edit mode
+                var existingId = document.getElementById('course-id').value;
+                if (existingId) {
+                    courseData.id = parseInt(existingId, 10);
+                }
+
+                var result = DB.courses.add(courseData);
+
+                if (result.success) {
+                    successAlert.textContent = 'Course saved successfully!';
+                    successAlert.classList.remove('hidden');
+                    setTimeout(function() {
+                        window.location.href = 'courses.html';
+                    }, 1500);
+                } else {
+                    errorAlert.textContent = result.message;
+                    errorAlert.classList.remove('hidden');
+                }
+            });
+        })();
+    </script>
+</body>
+</html>
