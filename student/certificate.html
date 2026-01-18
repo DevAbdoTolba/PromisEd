@@ -1,1 +1,73 @@
- 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Your learning dashboard - View enrolled courses and progress">
+    <title>My Dashboard - PromisEd</title>
+    <link rel="stylesheet" href="../css/global.css">
+    <link rel="stylesheet" href="../css/student.css">
+</head>
+<body>
+    <script src="../js/storage.js"></script>
+    <script src="../js/navbar.js"></script>
+
+    <div class="container mt-3">
+        <h1>My Courses</h1>
+        <p class="text-muted mb-2">Continue your learning journey</p>
+
+        <div id="courses-grid" class="courses-grid clearfix"></div>
+        <p id="no-courses" class="text-muted text-center hidden">
+            You haven't enrolled in any courses yet. 
+            <a href="catalog.html">Browse our catalog</a>
+        </p>
+    </div>
+
+    <script>
+        (function() {
+            var user = DB.users.getLoggedIn();
+            if (!user) {
+                window.location.href = '../login.html';
+                return;
+            }
+
+            var courses = DB.courses.getAll();
+            var grid = document.getElementById('courses-grid');
+            var noCourses = document.getElementById('no-courses');
+
+            if (!user.enrolledCourses || user.enrolledCourses.length === 0) {
+                noCourses.classList.remove('hidden');
+                return;
+            }
+
+            user.enrolledCourses.forEach(function(enrollment) {
+                var course = courses.find(function(c) { return c.id == enrollment.courseId; });
+                if (!course) return;
+
+                var isComplete = enrollment.progress >= 100;
+                var card = document.createElement('div');
+                card.className = 'col col-4';
+                card.innerHTML = 
+                    '<div class="course-card">' +
+                        '<div class="course-card-body">' +
+                            '<h3 class="course-title">' + course.title + '</h3>' +
+                            '<p class="text-muted">' + (course.lessons ? course.lessons.length : 0) + ' lessons</p>' +
+                            '<div class="progress-bar mt-1">' +
+                                '<div class="progress-fill" style="width:' + enrollment.progress + '%;"></div>' +
+                            '</div>' +
+                            '<p class="progress-text">' + enrollment.progress + '% complete</p>' +
+                        '</div>' +
+                        '<div class="course-card-footer">' +
+                            (isComplete ? 
+                                '<a href="certificate.html?course=' + course.id + '" class="btn btn-success">View Certificate</a>' :
+                                '<a href="course_player.html?id=' + course.id + '" class="btn btn-primary">Continue</a>'
+                            ) +
+                        '</div>' +
+                    '</div>';
+                grid.appendChild(card);
+            });
+        })();
+    </script>
+</body>
+</html>
+
