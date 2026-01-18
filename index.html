@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="PromisEd - Learn from the best courses online. Start your learning journey today!">
+    <title>PromisEd - Online Learning Platform</title>
+    <link rel="stylesheet" href="css/global.css">
+    <link rel="stylesheet" href="css/student.css">
+</head>
+<body>
+    <script src="js/storage.js"></script>
+    <script src="js/navbar.js"></script>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <h1>Learn Without Limits</h1>
+                <p class="hero-subtitle">Start, switch, or advance your career with thousands of courses from expert instructors.</p>
+                <div class="hero-buttons">
+                    <a href="student/catalog.html" class="btn btn-primary">Browse Courses</a>
+                    <a href="register.html" class="btn btn-outline">Join Free</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Featured Courses -->
+    <section class="featured-section">
+        <div class="container">
+            <h2 class="section-title">Featured Courses</h2>
+            <p class="section-subtitle text-muted">Top-rated courses from our platform</p>
+            
+            <div id="featured-courses" class="catalog-grid clearfix"></div>
+            <p id="no-courses" class="text-muted text-center hidden">No courses available yet. Check back soon!</p>
+            
+            <div class="text-center mt-2">
+                <a href="student/catalog.html" class="btn btn-outline">View All Courses</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features-section">
+        <div class="container">
+            <div class="row clearfix">
+                <div class="col col-4">
+                    <div class="feature-card text-center">
+                        <div class="feature-icon">📚</div>
+                        <h3>Quality Content</h3>
+                        <p class="text-muted">Expert-crafted courses with structured lessons</p>
+                    </div>
+                </div>
+                <div class="col col-4">
+                    <div class="feature-card text-center">
+                        <div class="feature-icon">🎯</div>
+                        <h3>Track Progress</h3>
+                        <p class="text-muted">Monitor your learning journey in real-time</p>
+                    </div>
+                </div>
+                <div class="col col-4">
+                    <div class="feature-card text-center">
+                        <div class="feature-icon">🏆</div>
+                        <h3>Get Certified</h3>
+                        <p class="text-muted">Earn certificates upon course completion</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container text-center">
+            <p class="text-muted">&copy; 2026 PromisEd. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <style>
+        .hero {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            color: white;
+            padding: 80px 0;
+            text-align: center;
+        }
+        .hero h1 {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+        .hero-subtitle {
+            font-size: 1.25rem;
+            opacity: 0.9;
+            margin-bottom: 30px;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .hero-buttons .btn {
+            margin: 0 10px;
+        }
+        .hero .btn-outline {
+            border-color: white;
+            color: white;
+        }
+        .featured-section, .features-section {
+            padding: 60px 0;
+        }
+        .section-title {
+            text-align: center;
+            font-size: 2rem;
+            margin-bottom: 5px;
+        }
+        .section-subtitle {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .feature-card {
+            padding: 30px 20px;
+        }
+        .feature-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+        .features-section {
+            background: var(--bg-white);
+        }
+        .footer {
+            padding: 30px 0;
+            border-top: 1px solid var(--border-color);
+        }
+    </style>
+
+    <script>
+        (function() {
+            var courses = DB.courses.getAll();
+            var grid = document.getElementById('featured-courses');
+            var noCourses = document.getElementById('no-courses');
+
+            // Filter only approved courses and get top 3
+            var approved = courses.filter(function(c) { return c.status === 'approved'; });
+            var featured = approved.slice(0, 3);
+
+            if (featured.length === 0) {
+                noCourses.classList.remove('hidden');
+                return;
+            }
+
+            featured.forEach(function(course) {
+                var card = document.createElement('div');
+                card.className = 'col col-4';
+                card.innerHTML = 
+                    '<div class="catalog-card">' +
+                        '<img src="' + (course.image || 'https://picsum.photos/seed/' + course.id + '/600/400') + '" alt="' + course.title + '" class="course-img">' +
+                        '<div class="catalog-card-body">' +
+                            '<h3>' + course.title + '</h3>' +
+                            '<p class="course-author">by ' + (course.author || 'Unknown') + '</p>' +
+                            '<p class="course-meta-info">' + (course.lessons ? course.lessons.length : 0) + ' lessons • ' + (course.duration || 'N/A') + '</p>' +
+                            '<p class="catalog-price">' + (course.price > 0 ? '$' + course.price : 'Free') + '</p>' +
+                            '<a href="student/course_details.html?id=' + course.id + '" class="btn btn-primary" style="width:100%;">View Course</a>' +
+                        '</div>' +
+                    '</div>';
+                grid.appendChild(card);
+            });
+        })();
+    </script>
+</body>
+</html>
