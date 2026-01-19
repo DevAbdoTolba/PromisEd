@@ -3,24 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Your learning dashboard - View enrolled courses and progress">
-    <title>My Dashboard - PromisEd</title>
+    <meta name="description" content="Your course completion certificate">
+    <title>Certificate - PromisEd</title>
     <link rel="stylesheet" href="../css/global.css">
     <link rel="stylesheet" href="../css/student.css">
+    <style>
+        @media print {
+            .no-print, .main-nav { display: none !important; }
+            .certificate { box-shadow: none !important; margin: 0 !important; }
+            .container { padding: 0 !important; margin: 0 !important; max-width: 100% !important; }
+            body { background: white !important; }
+        }
+    </style>
 </head>
 <body>
     <script src="../js/storage.js"></script>
     <script src="../js/navbar.js"></script>
 
     <div class="container mt-3">
-        <h1>My Courses</h1>
-        <p class="text-muted mb-2">Continue your learning journey</p>
+        <div class="no-print mb-2">
+            <a href="dashboard.html" class="text-muted">&larr; Back to Dashboard</a>
+        </div>
 
-        <div id="courses-grid" class="courses-grid clearfix"></div>
-        <p id="no-courses" class="text-muted text-center hidden">
-            You haven't enrolled in any courses yet. 
-            <a href="catalog.html">Browse our catalog</a>
-        </p>
+        <div class="certificate" id="certificate">
+            <div class="cert-border">
+                <div class="cert-inner">
+                    <div class="cert-logo">🎓</div>
+                    <h1 class="cert-title">Certificate of Completion</h1>
+                    <p class="cert-subtitle">This is to certify that</p>
+                    <h2 class="cert-name" id="cert-name">Student Name</h2>
+                    <p class="cert-text">has successfully completed the course</p>
+                    <h3 class="cert-course" id="cert-course">Course Title</h3>
+                    <p class="cert-text">on PromisEd Learning Platform</p>
+                    <div class="cert-date">
+                        <span id="cert-date">Date</span>
+                    </div>
+                    <div class="cert-signature">
+                        <div class="cert-sig-line"></div>
+                        <p>Platform Director</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center mt-2 no-print">
+            <button onclick="window.print()" class="btn btn-primary">Print Certificate</button>
+            <a href="dashboard.html" class="btn btn-secondary">Back to Dashboard</a>
+        </div>
     </div>
 
     <script>
@@ -31,43 +60,43 @@
                 return;
             }
 
-            var courses = DB.courses.getAll();
-            var grid = document.getElementById('courses-grid');
-            var noCourses = document.getElementById('no-courses');
+            var urlParams = new URLSearchParams(window.location.search);
+            var courseId = urlParams.get('course');
 
-            if (!user.enrolledCourses || user.enrolledCourses.length === 0) {
-                noCourses.classList.remove('hidden');
+            if (!courseId) {
+                alert('Invalid certificate request');
+                window.location.href = 'dashboard.html';
                 return;
             }
 
-            user.enrolledCourses.forEach(function(enrollment) {
-                var course = courses.find(function(c) { return c.id == enrollment.courseId; });
-                if (!course) return;
+            // Security Check: Verify course completion
+            var enrollment = user.enrolledCourses.find(function(e) { return e.courseId == courseId; });
+            
+            if (!enrollment || enrollment.progress < 100) {
+                alert('You must complete the course to view the certificate.');
+                window.location.href = 'dashboard.html';
+                return;
+            }
 
-                var isComplete = enrollment.progress >= 100;
-                var card = document.createElement('div');
-                card.className = 'col col-4';
-                card.innerHTML = 
-                    '<div class="course-card">' +
-                        '<div class="course-card-body">' +
-                            '<h3 class="course-title">' + course.title + '</h3>' +
-                            '<p class="text-muted">' + (course.lessons ? course.lessons.length : 0) + ' lessons</p>' +
-                            '<div class="progress-bar mt-1">' +
-                                '<div class="progress-fill" style="width:' + enrollment.progress + '%;"></div>' +
-                            '</div>' +
-                            '<p class="progress-text">' + enrollment.progress + '% complete</p>' +
-                        '</div>' +
-                        '<div class="course-card-footer">' +
-                            (isComplete ? 
-                                '<a href="certificate.html?course=' + course.id + '" class="btn btn-success">View Certificate</a>' :
-                                '<a href="course_player.html?id=' + course.id + '" class="btn btn-primary">Continue</a>'
-                            ) +
-                        '</div>' +
-                    '</div>';
-                grid.appendChild(card);
+            var course = DB.courses.getById(courseId);
+            if (!course) {
+                alert('Course not found');
+                window.location.href = 'dashboard.html';
+                return;
+            }
+
+            // Populate certificate
+            document.getElementById('cert-name').textContent = user.name;
+            document.getElementById('cert-course').textContent = course.title;
+            
+            var today = new Date();
+            var dateStr = today.toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
             });
+            document.getElementById('cert-date').textContent = dateStr;
         })();
     </script>
 </body>
 </html>
-

@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Your saved courses wishlist">
-    <title>My Wishlist - PromisEd</title>
+    <meta name="description" content="Share your feedback about the course">
+    <title>Course Feedback - PromisEd</title>
     <link rel="stylesheet" href="../css/global.css">
     <link rel="stylesheet" href="../css/student.css">
 </head>
@@ -13,66 +13,55 @@
     <script src="../js/navbar.js"></script>
 
     <div class="container mt-3">
-        <h1>My Wishlist</h1>
-        <p class="text-muted mb-2">Courses you're interested in</p>
-
-        <div id="wishlist-grid" class="wishlist-grid clearfix"></div>
+        <a href="dashboard.html" class="text-muted">&larr; Back to Dashboard</a>
         
-        <div id="empty-state" class="empty-state hidden">
-            <div class="empty-icon">💔</div>
-            <h3>No courses saved yet</h3>
-            <p class="text-muted">Browse our catalog and save courses you like!</p>
-            <a href="catalog.html" class="btn btn-primary mt-2">Browse Catalog</a>
+        <div class="card mt-2" style="max-width:600px;margin-left:auto;margin-right:auto;">
+            <h1>Course Feedback</h1>
+            <p id="course-name" class="text-muted mb-2">Help us improve by sharing your experience</p>
+
+            <div id="success-msg" class="alert alert-success hidden">
+                Thank you for your feedback! Your response has been recorded.
+            </div>
+
+            <form id="feedback-form">
+                <div class="form-group">
+                    <label>How would you rate this course?</label>
+                    <div class="rating-group">
+                        <label class="rating-option">
+                            <input type="radio" name="rating" value="5" required> ⭐⭐⭐⭐⭐ Excellent
+                        </label>
+                        <label class="rating-option">
+                            <input type="radio" name="rating" value="4"> ⭐⭐⭐⭐ Good
+                        </label>
+                        <label class="rating-option">
+                            <input type="radio" name="rating" value="3"> ⭐⭐⭐ Average
+                        </label>
+                        <label class="rating-option">
+                            <input type="radio" name="rating" value="2"> ⭐⭐ Below Average
+                        </label>
+                        <label class="rating-option">
+                            <input type="radio" name="rating" value="1"> ⭐ Poor
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="comments">Additional Comments</label>
+                    <textarea id="comments" class="form-control" rows="4" 
+                              placeholder="What did you like? What could be improved?"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="recommend"> 
+                        I would recommend this course to others
+                    </label>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Submit Feedback</button>
+            </form>
         </div>
     </div>
-
-    <style>
-        .wishlist-grid {
-            margin: 0 -10px;
-        }
-        .wishlist-grid .col {
-            padding: 0 10px;
-            margin-bottom: 20px;
-        }
-        .wishlist-card {
-            background: var(--bg-white);
-            border-radius: var(--radius);
-            box-shadow: var(--shadow);
-            padding: 20px;
-            position: relative;
-        }
-        .wishlist-card h3 {
-            margin-bottom: 10px;
-            padding-right: 30px;
-        }
-        .remove-btn {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            cursor: pointer;
-            opacity: 0.5;
-            transition: opacity 0.2s;
-        }
-        .remove-btn:hover {
-            opacity: 1;
-            color: var(--danger-color);
-        }
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-        }
-        .empty-icon {
-            font-size: 4rem;
-            margin-bottom: 20px;
-        }
-        /* Responsive */
-        @media (max-width: 768px) {
-            .wishlist-grid .col { width: 100%; }
-        }
-    </style>
 
     <script>
         (function() {
@@ -82,67 +71,49 @@
                 return;
             }
 
-            var courses = DB.courses.getAll();
-            var grid = document.getElementById('wishlist-grid');
-            var emptyState = document.getElementById('empty-state');
+            var urlParams = new URLSearchParams(window.location.search);
+            var courseId = urlParams.get('course');
 
-            function saveUser(updatedUser) {
-                var users = DB.users.getAll();
-                var idx = users.findIndex(function(u) { return u.id === updatedUser.id; });
-                if (idx !== -1) {
-                    users[idx] = updatedUser;
-                    localStorage.setItem('users', JSON.stringify(users));
-                    // Update session
-                    localStorage.setItem('current_user', JSON.stringify(updatedUser));
-                }
+            if (!courseId) {
+                window.location.href = 'dashboard.html';
+                return;
             }
 
-            function renderWishlist() {
-                // Re-fetch user to get latest wishlist
-                user = DB.users.getLoggedIn();
-                var wishlist = user.wishlist || [];
+            var course = DB.courses.getById(courseId);
+            if (course) {
+                document.getElementById('course-name').textContent = 'Feedback for: ' + course.title;
+            }
+
+            document.getElementById('feedback-form').addEventListener('submit', function(e) {
+                e.preventDefault();
                 
-                grid.innerHTML = '';
-
-                if (wishlist.length === 0) {
-                    emptyState.classList.remove('hidden');
-                    return;
+                var feedback = {
+                    id: Date.now(),
+                    userId: user.id,
+                    userName: user.name,
+                    rating: parseInt(document.querySelector('input[name="rating"]:checked').value),
+                    comments: document.getElementById('comments').value,
+                    recommend: document.getElementById('recommend').checked,
+                    timestamp: new Date().toISOString()
+                };
+                
+                // Save feedback to course object
+                var courses = DB.courses.getAll();
+                var courseIdx = courses.findIndex(function(c) { return c.id == courseId; });
+                
+                if (courseIdx !== -1) {
+                    if (!courses[courseIdx].feedback) {
+                        courses[courseIdx].feedback = [];
+                    }
+                    courses[courseIdx].feedback.push(feedback);
+                    localStorage.setItem('courses', JSON.stringify(courses));
+                    console.log('Feedback saved to course:', feedback);
                 }
-
-                emptyState.classList.add('hidden');
-
-                wishlist.forEach(function(courseId) {
-                    var course = courses.find(function(c) { return c.id == courseId; });
-                    if (!course) return;
-
-                    var card = document.createElement('div');
-                    card.className = 'col col-4';
-                    card.innerHTML = 
-                        '<div class="wishlist-card">' +
-                            '<button class="remove-btn" data-id="' + course.id + '" title="Remove from wishlist">❤️</button>' +
-                            '<h3>' + course.title + '</h3>' +
-                            '<p class="text-muted">' + (course.lessons ? course.lessons.length : 0) + ' lessons</p>' +
-                            '<p class="catalog-price">' + (course.price > 0 ? '$' + course.price : 'Free') + '</p>' +
-                            '<a href="course_details.html?id=' + course.id + '" class="btn btn-outline" style="margin-right:5px;">View</a>' +
-                            '<a href="checkout.html?course=' + course.id + '" class="btn btn-primary">Enroll</a>' +
-                        '</div>';
-                    grid.appendChild(card);
-                });
-
-                // Attach remove handlers
-                document.querySelectorAll('.remove-btn').forEach(function(btn) {
-                    btn.addEventListener('click', function() {
-                        var courseId = parseInt(this.dataset.id);
-                        user.wishlist = user.wishlist.filter(function(id) { return id !== courseId; });
-                        saveUser(user);
-                        renderWishlist();
-                    });
-                });
-            }
-
-            renderWishlist();
+                
+                this.style.display = 'none';
+                document.getElementById('success-msg').classList.remove('hidden');
+            });
         })();
     </script>
 </body>
 </html>
-
