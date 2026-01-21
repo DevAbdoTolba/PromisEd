@@ -89,8 +89,9 @@
             document.getElementById('cert-name').textContent = user.name;
             document.getElementById('cert-course').textContent = course.title;
             
-            var today = new Date();
-            var dateStr = today.toLocaleDateString('en-US', { 
+            // Use the actual completion date, not today's date
+            var completionDate = enrollment.completedDate ? new Date(enrollment.completedDate) : new Date();
+            var dateStr = completionDate.toLocaleDateString('en-US', { 
                 year: 'numeric', 
                 month: 'long', 
                 day: 'numeric' 
