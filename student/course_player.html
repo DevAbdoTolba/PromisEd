@@ -133,6 +133,11 @@
                 users[userIndex].enrolledCourses[enrollIndex].progress = progress;
                 users[userIndex].enrolledCourses[enrollIndex].completedLessons = completedLessons;
                 
+                // Save completion date when course is finished
+                if (progress >= 100 && !users[userIndex].enrolledCourses[enrollIndex].completedDate) {
+                    users[userIndex].enrolledCourses[enrollIndex].completedDate = new Date().toISOString();
+                }
+                
                 localStorage.setItem('users', JSON.stringify(users));
                 
                 // Show certificate section if 100%
