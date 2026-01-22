@@ -1,1 +1,71 @@
- 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="View and manage students on PromisEd">
+    <title>Students - Admin | PromisEd</title>
+    <link rel="stylesheet" href="../css/global.css">
+    <link rel="stylesheet" href="../css/admin.css">
+</head>
+<body>
+    <script src="../js/storage.js"></script>
+    <script src="../js/navbar.js"></script>
+
+    <div class="container mt-3">
+        <h1>Manage Students</h1>
+        <p class="text-muted mb-2">View all registered students</p>
+
+        <div class="card">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Enrolled Courses</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="students-table"></tbody>
+            </table>
+            <p id="no-students" class="text-muted text-center hidden">No students registered yet.</p>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            var user = DB.users.getLoggedIn();
+            if (!user || user.role !== 'admin') {
+                window.location.href = '../login.html';
+                return;
+            }
+
+            var users = DB.users.getAll();
+            var students = users.filter(function(u) { return u.role === 'student'; });
+            var tbody = document.getElementById('students-table');
+            var noStudents = document.getElementById('no-students');
+
+            if (students.length === 0) {
+                noStudents.classList.remove('hidden');
+            } else {
+                students.forEach(function(student) {
+                    var row = document.createElement('tr');
+                    var enrolledCount = student.enrolledCourses ? student.enrolledCourses.length : 0;
+                    row.innerHTML = 
+                        '<td>' + student.id + '</td>' +
+                        '<td><strong>' + student.name + '</strong></td>' +
+                        '<td>' + student.email + '</td>' +
+                        '<td>' + enrolledCount + ' course(s)</td>' +
+                        '<td>' +
+                            '<a href="student_details.html?id=' + student.id + '" class="btn btn-outline" style="padding:5px 10px;">Details</a> ' +
+                            '<a href="student_progress.html?studentId=' + student.id + '" class="btn btn-outline" style="padding:5px 10px;">Progress</a> ' +
+                            '<a href="student_certs.html?studentId=' + student.id + '" class="btn btn-outline" style="padding:5px 10px;">Certs</a>' +
+                        '</td>';
+                    tbody.appendChild(row);
+                });
+            }
+        })();
+    </script>
+</body>
+</html>

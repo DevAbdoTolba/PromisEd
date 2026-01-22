@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>CSS Files Overview - PromisEd</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      body {
+        font-family:
+          system-ui,
+          -apple-system,
+          Segoe UI,
+          Roboto,
+          Arial;
+        line-height: 1.5;
+        margin: 24px;
+        color: #111;
+      }
+      h1 {
+        font-size: 1.6rem;
+      }
+      ul {
+        margin-left: 18px;
+      }
+      code {
+        background: #f6f8fa;
+        padding: 2px 6px;
+        border-radius: 4px;
+      }
+      .tip {
+        color: #0b5394;
+        background: #eef6ff;
+        padding: 8px;
+        border-radius: 6px;
+        margin: 10px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🎨 CSS Files Overview</h1>
+    <p class="tip">
+      Each CSS file targets a specific area of the app. Keep global variables
+      and layout rules in <code>global.css</code> and keep page-specific CSS in
+      dedicated files for clarity.
+    </p>
+
+    <ul>
+      <li>
+        <code>css/global.css</code> — Core variables (colors, spacing), grid
+        system, base typography, and shared utility classes. Use this for
+        site-wide layout and theme settings.
+      </li>
+      <li>
+        <code>css/auth.css</code> — Styles for auth forms (login/register).
+        Focuses on the centered card, form spacing, alerts, and responsive
+        tweaks for small screens.
+      </li>
+      <li>
+        <code>css/login.css</code> — (Optional page-level overrides for the
+        login page). If non-empty, use for login-specific tweaks (e.g., hero or
+        small-screen adjustments).
+      </li>
+      <li>
+        <code>css/admin.css</code> — Admin interface styling: tables, action
+        buttons, filters, and admin dashboard widgets.
+      </li>
+      <li>
+        <code>css/student.css</code> — Student-facing pages (catalog, course
+        details, player layout, progress components).
+      </li>
+    </ul>
+
+    <h2>Styling Tips</h2>
+    <ol>
+      <li>
+        Keep component-level styles scoped to avoid accidental bleed across
+        pages.
+      </li>
+      <li>
+        Define a small set of CSS variables in <code>global.css</code> (colors,
+        border radius, breakpoints) and reuse them.
+      </li>
+    </ol>
+  </body>
+</html>

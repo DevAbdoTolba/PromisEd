@@ -1,1 +1,121 @@
- 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Admin Dashboard - Overview of PromisEd platform statistics">
+    <title>Dashboard - Admin | PromisEd</title>
+    <link rel="stylesheet" href="../css/global.css">
+    <link rel="stylesheet" href="../css/admin.css">
+</head>
+<body>
+    <script src="../js/storage.js"></script>
+    <script src="../js/navbar.js"></script>
+
+    <div class="container mt-3">
+        <h1>Admin Dashboard</h1>
+        <p class="text-muted mb-2">Platform overview and statistics</p>
+
+        <div class="stats-grid clearfix">
+            <div class="col col-4">
+                <div class="stat-card">
+                    <div class="stat-value" id="total-users">0</div>
+                    <div class="stat-label">Total Users</div>
+                </div>
+            </div>
+            <div class="col col-4">
+                <div class="stat-card">
+                    <div class="stat-value" id="total-courses">0</div>
+                    <div class="stat-label">Total Courses</div>
+                </div>
+            </div>
+            <div class="col col-4">
+                <div class="stat-card">
+                    <div class="stat-value" id="total-revenue">$0</div>
+                    <div class="stat-label">Total Revenue</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col col-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">Quick Actions</h2>
+                    </div>
+                    <a href="course_editor.html" class="btn btn-primary mb-1" style="display:block;">+ Create New Course</a>
+                    <a href="students.html" class="btn btn-secondary mb-1" style="display:block;">View All Students</a>
+                    <a href="courses.html" class="btn btn-outline" style="display:block;">Manage Courses</a>
+                </div>
+            </div>
+            <div class="col col-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">Recent Students</h2>
+                    </div>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recent-students"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            // Check admin access
+            var user = DB.users.getLoggedIn();
+            if (!user || user.role !== 'admin') {
+                window.location.href = '../login.html';
+                return;
+            }
+
+            var users = DB.users.getAll();
+            var courses = DB.courses.getAll();
+
+            // Total Users
+            document.getElementById('total-users').textContent = users.length;
+
+            // Total Courses
+            document.getElementById('total-courses').textContent = courses.length;
+
+            // Revenue Calculation: sum price of all courses where user.enrolledCourses.isPaid === true
+            var revenue = 0;
+            users.forEach(function(u) {
+                if (u.enrolledCourses && u.enrolledCourses.length > 0) {
+                    u.enrolledCourses.forEach(function(enrollment) {
+                        if (enrollment.isPaid) {
+                            var course = courses.find(function(c) { return c.id == enrollment.courseId; });
+                            if (course) {
+                                revenue += course.price || 0;
+                            }
+                        }
+                    });
+                }
+            });
+            document.getElementById('total-revenue').textContent = '$' + revenue;
+
+            // Recent Students (last 5)
+            var students = users.filter(function(u) { return u.role === 'student'; });
+            var recentStudents = students.slice(-5).reverse();
+            var tbody = document.getElementById('recent-students');
+            
+            if (recentStudents.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="2" class="text-muted">No students yet</td></tr>';
+            } else {
+                recentStudents.forEach(function(s) {
+                    var row = document.createElement('tr');
+                    row.innerHTML = '<td>' + s.name + '</td><td>' + s.email + '</td>';
+                    tbody.appendChild(row);
+                });
+            }
+        })();
+    </script>
+</body>
+</html>

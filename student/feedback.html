@@ -1,1 +1,119 @@
- 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Share your feedback about the course">
+    <title>Course Feedback - PromisEd</title>
+    <link rel="stylesheet" href="../css/global.css">
+    <link rel="stylesheet" href="../css/student.css">
+</head>
+<body>
+    <script src="../js/storage.js"></script>
+    <script src="../js/navbar.js"></script>
+
+    <div class="container mt-3">
+        <a href="dashboard.html" class="text-muted">&larr; Back to Dashboard</a>
+        
+        <div class="card mt-2" style="max-width:600px;margin-left:auto;margin-right:auto;">
+            <h1>Course Feedback</h1>
+            <p id="course-name" class="text-muted mb-2">Help us improve by sharing your experience</p>
+
+            <div id="success-msg" class="alert alert-success hidden">
+                Thank you for your feedback! Your response has been recorded.
+            </div>
+
+            <form id="feedback-form">
+                <div class="form-group">
+                    <label>How would you rate this course?</label>
+                    <div class="rating-group">
+                        <label class="rating-option">
+                            <input type="radio" name="rating" value="5" required> ⭐⭐⭐⭐⭐ Excellent
+                        </label>
+                        <label class="rating-option">
+                            <input type="radio" name="rating" value="4"> ⭐⭐⭐⭐ Good
+                        </label>
+                        <label class="rating-option">
+                            <input type="radio" name="rating" value="3"> ⭐⭐⭐ Average
+                        </label>
+                        <label class="rating-option">
+                            <input type="radio" name="rating" value="2"> ⭐⭐ Below Average
+                        </label>
+                        <label class="rating-option">
+                            <input type="radio" name="rating" value="1"> ⭐ Poor
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="comments">Additional Comments</label>
+                    <textarea id="comments" class="form-control" rows="4" 
+                              placeholder="What did you like? What could be improved?"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="recommend"> 
+                        I would recommend this course to others
+                    </label>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Submit Feedback</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            var user = DB.users.getLoggedIn();
+            if (!user) {
+                window.location.href = '../login.html';
+                return;
+            }
+
+            var urlParams = new URLSearchParams(window.location.search);
+            var courseId = urlParams.get('course');
+
+            if (!courseId) {
+                window.location.href = 'dashboard.html';
+                return;
+            }
+
+            var course = DB.courses.getById(courseId);
+            if (course) {
+                document.getElementById('course-name').textContent = 'Feedback for: ' + course.title;
+            }
+
+            document.getElementById('feedback-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                var feedback = {
+                    id: Date.now(),
+                    userId: user.id,
+                    userName: user.name,
+                    rating: parseInt(document.querySelector('input[name="rating"]:checked').value),
+                    comments: document.getElementById('comments').value,
+                    recommend: document.getElementById('recommend').checked,
+                    timestamp: new Date().toISOString()
+                };
+                
+                // Save feedback to course object
+                var courses = DB.courses.getAll();
+                var courseIdx = courses.findIndex(function(c) { return c.id == courseId; });
+                
+                if (courseIdx !== -1) {
+                    if (!courses[courseIdx].feedback) {
+                        courses[courseIdx].feedback = [];
+                    }
+                    courses[courseIdx].feedback.push(feedback);
+                    localStorage.setItem('courses', JSON.stringify(courses));
+                    console.log('Feedback saved to course:', feedback);
+                }
+                
+                this.style.display = 'none';
+                document.getElementById('success-msg').classList.remove('hidden');
+            });
+        })();
+    </script>
+</body>
+</html>

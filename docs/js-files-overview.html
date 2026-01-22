@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>JS Files Overview - PromisEd</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      body {
+        font-family:
+          system-ui,
+          -apple-system,
+          Segoe UI,
+          Roboto,
+          Arial;
+        line-height: 1.6;
+        margin: 20px;
+        color: #111;
+      }
+      h1 {
+        font-size: 1.6rem;
+      }
+      h2 {
+        margin-top: 18px;
+      }
+      code {
+        background: #f6f8fa;
+        padding: 2px 6px;
+        border-radius: 4px;
+      }
+      .important {
+        color: #b45309;
+        background: #fff7ed;
+        padding: 8px;
+        border-radius: 6px;
+        margin: 10px 0;
+      }
+      ul {
+        margin-left: 18px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🧩 JavaScript Files Overview (Function-level explanations)</h1>
+    <p class="important">
+      The JS layer implements client-side persistence, validation,
+      authentication flows, and UX behaviors. Note: the project contains two DB
+      implementations (<code>js/db.js</code> and <code>js/storage.js</code>) —
+      <code>storage.js</code> is the more feature-rich version (validators +
+      blocklist) and is recommended as the single source of truth.
+    </p>
+
+    <h2><code>js/db.js</code> — Simple LocalStorage-powered DB</h2>
+    <ul>
+      <li>
+        <code>DB.users._load()</code> and <code>._save()</code> — Read/write
+        user arrays to <code>localStorage</code>. Purpose: persistence across
+        reloads.
+      </li>
+      <li>
+        <code>DB.users.getByEmail(email)</code> — Look up a user by email. Used
+        by the login and registration flows to detect duplicates and
+        authenticate.
+      </li>
+      <li>
+        <code>DB.users.register(user)</code> — Validate basic schema, ensure
+        email uniqueness, save new user. Important to prevent duplicate accounts
+        and keep stored shape consistent.
+      </li>
+      <li>
+        <code>DB.users.login(email, password)</code> — Verify credentials
+        against stored user. Returns a result object used by auth pages.
+      </li>
+      <li>
+        <code>DB.session.create(currentUser)</code>, <code>current()</code>,
+        <code>clear()</code> — Session management via <code>localStorage</code>.
+        Handles stay-signed-in behavior for the site.
+      </li>
+
+      <li>
+        <em>Why this matters:</em> provides a minimal backend-like API so the UI
+        can behave as if a server exists (authentication, session, user store).
+      </li>
+    </ul>
+
+    <h2>
+      <code>js/storage.js</code> — Full-featured storage + validation +
+      anti-spam
+    </h2>
+    <ul>
+      <li>
+        <code>Patterns</code> &mdash; Regular expressions that define valid
+        names, emails, and passwords. Purpose: strong client-side input
+        validation to provide early feedback and help maintain data quality.
+      </li>
+      <li>
+        <code>Validators.user(data)</code> &mdash; Performs sanitization,
+        pattern checks, role check, and anti-spam domain check (using a
+        blocklist read by <code>DB.init()</code>). Returns an error string or
+        <code>null</code>. Important to stop invalid/disposable signups.
+      </li>
+      <li>
+        <code>Validators.course(data)</code> &mdash; Ensures course shape
+        (title, price, status, lessons). Prevents storing malformed courses.
+      </li>
+      <li>
+        <code>Serializer.read/write</code> — Small wrapper to JSON
+        parse/stringify to reduce repeated error handling when using
+        <code>localStorage</code>.
+      </li>
+      <li>
+        <code>DB.init()</code> — Initializes tables (users/courses/categories)
+        and fetches an up-to-date disposable-email blocklist from GitHub (cached
+        weekly). Importance: serverless anti-spam and resilience via a fallback
+        list.
+        <ul>
+          <li>
+            Why: prevents many throwaway or spam accounts that degrade the
+            platform data quality.
+          </li>
+          <li>
+            How: fetches a public blocklist, stores it in localStorage, and
+            timestamps updates.
+          </li>
+        </ul>
+      </li>
+      <li>
+        <code>DB.users.register(userData)</code> — Uses
+        <code>Validators.user</code>, checks duplicates, and writes the user to
+        storage. Returns success and user or an error message. Importance:
+        central validation + persistence logic in one place.
+      </li>
+      <li>
+        <code>DB.users.login(email, password)</code> — Authenticates user,
+        writes session. Important for sign-in flow.
+      </li>
+      <li>
+        <code>DB.users.getLoggedIn()</code> — Reads session and returns the
+        up-to-date user from store (safer than trusting session snapshot).
+      </li>
+      <li>
+        <code>DB.users.logout()</code> — Clears session and navigates to
+        <code>login.html</code>. Makes sign-out behavior predictable.
+      </li>
+      <li>
+        <code>DB.courses</code> &mdash; CRUD-like helpers:
+        <code>getAll()</code>, <code>add(courseData)</code>,
+        <code>getById(id)</code>. Validates using
+        <code>Validators.course</code>. Purpose: manage course data and ensure
+        consistent entries.
+      </li>
+      <li>
+        <code>DB.student.enroll(userId, courseId)</code> — Adds a course
+        enrollment to a user (progress tracking fields included). Important to
+        represent enrollments and prevent duplicate enrollments.
+      </li>
+
+      <li>
+        <em>Why this file is important</em>: It centralizes data rules, robust
+        validation, and an anti-spam mechanism. For production, this logic
+        should be moved to a server, but as a client-side prototype it enforces
+        data integrity and prevents many invalid states.
+      </li>
+    </ul>
+
+    <h2><code>js/register.js</code> — Client UX & form protections</h2>
+    <ul>
+      <li>
+        <code>hidePasswords()</code> — Ensures password fields are hidden by
+        default and when returning to the page. UX + security: prevents leaking
+        passwords when navigating back.
+      </li>
+      <li>
+        Show/Hide toggle listeners — Let users reveal/hide typed passwords.
+        Improves usability while preserving default secrecy.
+      </li>
+      <li>
+        <code>validateMatch()</code> — Live confirmation that passwords match
+        and shows inline messages after a submit attempt. Prevents form
+        submission with mismatched passwords.
+      </li>
+      <li>
+        Agree checkbox validation — Ensures users accept terms before
+        submitting.
+      </li>
+      <li>
+        Submit handler — Runs validation, builds the user object, calls
+        <code>DB.users.register()</code>, stores last email for convenience and
+        redirects to login on success.
+      </li>
+
+      <li>
+        <em>Why</em>: these functions improve user trust and reduce bad signups
+        (both UX and validation layers).
+      </li>
+    </ul>
+
+    <h2><code>js/login.js</code> — Login UX & safe output</h2>
+    <ul>
+      <li>
+        <code>escapeHtml(s)</code> — Small helper to escape user input before
+        injecting into the DOM (prevents basic XSS when showing the email in a
+        message).
+      </li>
+      <li>
+        <code>hidePassword()</code> and toggle — Similar UX pattern as register
+        page.
+      </li>
+      <li>Prefill remembered email (from <code>localStorage</code>).</li>
+      <li>
+        Submit handler — Validates native form constraints, calls
+        <code>DB.users.login()</code>, on success calls
+        <code>DB.session.create()</code> and redirects to the role-based
+        dashboard.
+      </li>
+
+      <li>
+        <em>Why</em>: Login is the bridge to authenticated features; escaping
+        and session creation are essential to avoid injection and preserve user
+        state.
+      </li>
+    </ul>
+
+    <h2>Other files & placeholders</h2>
+    <ul>
+      <li>
+        <code>js/navbar.js</code> — Currently empty. Intended to render
+        navigation and show/hide items based on session & role (recommended to
+        implement a small component that reads
+        <code>DB.session.current()</code>).
+      </li>
+      <li>
+        <code>js/utils.js</code> — Empty. Good place for reusable helpers (date
+        formatting, templating helpers, small DOM utilities).
+      </li>
+      <li>
+        <code>js/auth.js</code> — Empty. Could centralize auth helpers (token
+        handling, role checks, guards) if the app grows.
+      </li>
+    </ul>
+
+    <h2>Final Recommendation</h2>
+    <ol>
+      <li>
+        Consolidate to a single storage layer. Prefer
+        <code>js/storage.js</code> (it is fully featured) and remove the older
+        <code>js/db.js</code> to avoid duplication/confusion.
+      </li>
+      <li>
+        Implement or remove empty placeholders (<code>navbar.js</code>,
+        <code>utils.js</code>, <code>auth.js</code>) depending on planned
+        features.
+      </li>
+      <li>
+        Move critical validation/server-like checks to the server when available
+        — client-side validation is helpful but not authoritative.
+      </li>
+    </ol>
+  </body>
+</html>

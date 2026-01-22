@@ -1,191 +1,215 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Complete your course enrollment">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Complete your course enrollment" />
     <title>Checkout - PromisEd</title>
-    <link rel="stylesheet" href="../css/global.css">
-    <link rel="stylesheet" href="../css/student.css">
+    <link rel="stylesheet" href="../css/global.css" />
+    <link rel="stylesheet" href="../css/student.css" />
     <!-- PayPal SDK -->
-    <script src="https://www.paypal.com/sdk/js?client-id=test&currency=USD"></script>
-</head>
-<body>
+    <script src="https://www.paypal.com/sdk/js?client-id=test&currency=EGP"></script>
+  </head>
+  <body>
     <script src="../js/storage.js"></script>
     <script src="../js/navbar.js"></script>
 
     <div class="container mt-3">
-        <div class="checkout-wrapper">
-            <div class="card" style="max-width:500px;margin:0 auto;">
-                <h1>Checkout</h1>
-                <p class="text-muted mb-2">Complete your enrollment</p>
+      <div class="checkout-wrapper">
+        <div class="card" style="max-width: 500px; margin: 0 auto">
+          <h1>Checkout</h1>
+          <p class="text-muted mb-2">Complete your enrollment</p>
 
-                <div id="error-alert" class="alert alert-danger hidden"></div>
-                <div id="success-alert" class="alert alert-success hidden"></div>
+          <div id="error-alert" class="alert alert-danger hidden"></div>
+          <div id="success-alert" class="alert alert-success hidden"></div>
 
-                <div class="checkout-summary">
-                    <h3 id="course-title">Course Title</h3>
-                    <p class="text-muted" id="lesson-info">X lessons</p>
-                    <hr>
-                    <div class="clearfix">
-                        <span style="float:left;font-weight:500;">Total:</span>
-                        <span style="float:right;font-size:1.5rem;font-weight:700;color:var(--primary-color);" id="total-price">$0</span>
-                    </div>
-                </div>
-
-                <hr style="margin:20px 0;">
-
-                <h3 class="mb-2">Pay with PayPal</h3>
-                <div id="paypal-button-container"></div>
-
-                <p class="text-center text-muted mt-2" style="font-size:0.85rem;">
-                    🔒 Secure payment powered by PayPal (Sandbox Mode)
-                </p>
+          <div class="checkout-summary">
+            <h3 id="course-title">Course Title</h3>
+            <p class="text-muted" id="lesson-info">X lessons</p>
+            <hr />
+            <div class="clearfix">
+              <span style="float: left; font-weight: 500">Total:</span>
+              <span
+                style="
+                  float: right;
+                  font-size: 1.5rem;
+                  font-weight: 700;
+                  color: var(--primary-color);
+                "
+                id="total-price"
+                >$0</span
+              >
             </div>
+          </div>
+
+          <hr style="margin: 20px 0" />
+
+          <h3 class="mb-2">Pay with PayPal</h3>
+          <div id="paypal-button-container"></div>
+
+          <p class="text-center text-muted mt-2" style="font-size: 0.85rem">
+            🔒 Secure payment powered by PayPal (Sandbox Mode)
+          </p>
         </div>
+      </div>
     </div>
 
     <style>
-        .checkout-wrapper {
-            padding: 40px 0;
-        }
-        .checkout-summary {
-            background: var(--bg-color);
-            padding: 20px;
-            border-radius: var(--radius);
-            margin-bottom: 20px;
-        }
-        #paypal-button-container {
-            min-height: 150px;
-        }
+      .checkout-wrapper {
+        padding: 40px 0;
+      }
+      .checkout-summary {
+        background: var(--bg-color);
+        padding: 20px;
+        border-radius: var(--radius);
+        margin-bottom: 20px;
+      }
+      #paypal-button-container {
+        min-height: 150px;
+      }
     </style>
 
     <script>
-        (function() {
-            var user = DB.users.getLoggedIn();
-            if (!user) {
-                window.location.href = '../login.html';
-                return;
-            }
+      (function () {
+        var user = DB.users.getLoggedIn();
+        if (!user) {
+          window.location.href = "../login.html";
+          return;
+        }
 
-            var urlParams = new URLSearchParams(window.location.search);
-            var courseId = urlParams.get('course');
+        var urlParams = new URLSearchParams(window.location.search);
+        var courseId = urlParams.get("course");
 
-            if (!courseId) {
-                window.location.href = 'catalog.html';
-                return;
-            }
+        if (!courseId) {
+          window.location.href = "catalog.html";
+          return;
+        }
 
-            var course = DB.courses.getById(courseId);
-            if (!course) {
-                alert('Course not found');
-                window.location.href = 'catalog.html';
-                return;
-            }
+        var course = DB.courses.getById(courseId);
+        if (!course) {
+          alert("Course not found");
+          window.location.href = "catalog.html";
+          return;
+        }
 
-            // Check if already enrolled
-            var isEnrolled = user.enrolledCourses && user.enrolledCourses.find(function(e) { return e.courseId == course.id; });
-            if (isEnrolled) {
-                alert('You are already enrolled in this course!');
-                window.location.href = 'course_player.html?id=' + course.id;
-                return;
-            }
+        // Check if already enrolled
+        var isEnrolled =
+          user.enrolledCourses &&
+          user.enrolledCourses.find(function (e) {
+            return e.courseId == course.id;
+          });
+        if (isEnrolled) {
+          alert("You are already enrolled in this course!");
+          window.location.href = "course_player.html?id=" + course.id;
+          return;
+        }
 
-            // Redirect free courses directly to enrollment
-            if (course.price === 0 || !course.price) {
-                var result = DB.student.enroll(user.id, course.id);
-                if (result.success) {
-                    window.location.href = 'course_player.html?id=' + course.id;
-                } else {
-                    alert(result.message);
-                    window.location.href = 'catalog.html';
-                }
-                return;
-            }
+        // Redirect free courses directly to enrollment
+        if (course.price === 0 || !course.price) {
+          var result = DB.student.enroll(user.id, course.id);
+          if (result.success) {
+            window.location.href = "course_player.html?id=" + course.id;
+          } else {
+            alert(result.message);
+            window.location.href = "catalog.html";
+          }
+          return;
+        }
 
-            // Populate checkout info
-            document.getElementById('course-title').textContent = course.title;
-            document.getElementById('lesson-info').textContent = (course.lessons ? course.lessons.length : 0) + ' lessons';
-            document.getElementById('total-price').textContent = '$' + course.price;
+        // Populate checkout info
+        document.getElementById("course-title").textContent = course.title;
+        document.getElementById("lesson-info").textContent =
+          (course.lessons ? course.lessons.length : 0) + " lessons";
+        document.getElementById("total-price").textContent = "$" + course.price;
 
-            var errorAlert = document.getElementById('error-alert');
-            var successAlert = document.getElementById('success-alert');
+        var errorAlert = document.getElementById("error-alert");
+        var successAlert = document.getElementById("success-alert");
 
-            // Check payment flag from localStorage
-            var payFlag = localStorage.getItem('pay');
-            
-            if (payFlag === '0') {
-                // Bypass PayPal - show simple confirm button
-                document.getElementById('paypal-button-container').innerHTML = 
-                    '<button id="bypass-pay-btn" class="btn btn-primary" style="width:100%;padding:15px;font-size:1.1rem;">' +
-                    'Complete Enrollment (Demo Mode)</button>' +
-                    '<p class="text-muted text-center mt-1"><small>Payment gateway disabled (pay=0)</small></p>';
-                
-                document.getElementById('bypass-pay-btn').addEventListener('click', function() {
-                    this.disabled = true;
-                    this.textContent = 'Processing...';
-                    
-                    var result = DB.student.enroll(user.id, course.id);
-                    
-                    if (result.success) {
-                        successAlert.textContent = 'Enrollment successful! Redirecting to your course...';
-                        successAlert.classList.remove('hidden');
-                        
-                        setTimeout(function() {
-                            window.location.href = 'course_player.html?id=' + course.id;
-                        }, 1500);
-                    } else {
-                        errorAlert.textContent = result.message;
-                        errorAlert.classList.remove('hidden');
-                        this.disabled = false;
-                        this.textContent = 'Complete Enrollment (Demo Mode)';
-                    }
+        // Check payment flag from localStorage
+        var payFlag = localStorage.getItem("pay");
+
+        if (payFlag === "0") {
+          // Bypass PayPal - show simple confirm button
+          document.getElementById("paypal-button-container").innerHTML =
+            '<button id="bypass-pay-btn" class="btn btn-primary" style="width:100%;padding:15px;font-size:1.1rem;">' +
+            "Complete Enrollment (Demo Mode)</button>" +
+            '<p class="text-muted text-center mt-1"><small>Payment gateway disabled (pay=0)</small></p>';
+
+          document
+            .getElementById("bypass-pay-btn")
+            .addEventListener("click", function () {
+              this.disabled = true;
+              this.textContent = "Processing...";
+
+              var result = DB.student.enroll(user.id, course.id);
+
+              if (result.success) {
+                successAlert.textContent =
+                  "Enrollment successful! Redirecting to your course...";
+                successAlert.classList.remove("hidden");
+
+                setTimeout(function () {
+                  window.location.href = "course_player.html?id=" + course.id;
+                }, 1500);
+              } else {
+                errorAlert.textContent = result.message;
+                errorAlert.classList.remove("hidden");
+                this.disabled = false;
+                this.textContent = "Complete Enrollment (Demo Mode)";
+              }
+            });
+        } else {
+          // Normal PayPal flow (pay=1 or not set)
+          paypal
+            .Buttons({
+              createOrder: function (data, actions) {
+                return actions.order.create({
+                  purchase_units: [
+                    {
+                      description: course.title,
+                      amount: {
+                        value: course.price.toString(),
+                      },
+                    },
+                  ],
                 });
-            } else {
-                // Normal PayPal flow (pay=1 or not set)
-                paypal.Buttons({
-                    createOrder: function(data, actions) {
-                        return actions.order.create({
-                            purchase_units: [{
-                                description: course.title,
-                                amount: {
-                                    value: course.price.toString()
-                                }
-                            }]
-                        });
-                    },
-                    onApprove: function(data, actions) {
-                        return actions.order.capture().then(function(details) {
-                            console.log('Success:', details);
-                            
-                            var result = DB.student.enroll(user.id, course.id);
-                            
-                            if (result.success) {
-                                successAlert.textContent = 'Payment successful! Redirecting to your course...';
-                                successAlert.classList.remove('hidden');
-                                
-                                setTimeout(function() {
-                                    window.location.href = 'course_player.html?id=' + course.id;
-                                }, 2000);
-                            } else {
-                                errorAlert.textContent = result.message;
-                                errorAlert.classList.remove('hidden');
-                            }
-                        });
-                    },
-                    onError: function(err) {
-                        console.error('PayPal Error:', err);
-                        errorAlert.textContent = 'Payment failed. Please try again or use a different payment method.';
-                        errorAlert.classList.remove('hidden');
-                        return false;
-                    },
-                    onCancel: function(data) {
-                        errorAlert.textContent = 'Payment was cancelled.';
-                        errorAlert.classList.remove('hidden');
-                    }
-                }).render('#paypal-button-container');
-            }
-        })();
+              },
+              onApprove: function (data, actions) {
+                return actions.order.capture().then(function (details) {
+                  console.log("Success:", details);
+
+                  var result = DB.student.enroll(user.id, course.id);
+
+                  if (result.success) {
+                    successAlert.textContent =
+                      "Payment successful! Redirecting to your course...";
+                    successAlert.classList.remove("hidden");
+
+                    setTimeout(function () {
+                      window.location.href =
+                        "course_player.html?id=" + course.id;
+                    }, 2000);
+                  } else {
+                    errorAlert.textContent = result.message;
+                    errorAlert.classList.remove("hidden");
+                  }
+                });
+              },
+              onError: function (err) {
+                console.error("PayPal Error:", err);
+                errorAlert.textContent =
+                  "Payment failed. Please try again or use a different payment method.";
+                errorAlert.classList.remove("hidden");
+                return false;
+              },
+              onCancel: function (data) {
+                errorAlert.textContent = "Payment was cancelled.";
+                errorAlert.classList.remove("hidden");
+              },
+            })
+            .render("#paypal-button-container");
+        }
+      })();
     </script>
-</body>
+  </body>
 </html>

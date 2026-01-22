@@ -1,1 +1,66 @@
- 
+/* =============================================
+   ADMIN.CSS - Admin Panel Styles
+   ============================================= */
+
+/* Stats Grid */
+.stats-grid {
+    margin: 0 -10px;
+}
+.stats-grid .col {
+    padding: 0 10px;
+}
+
+/* Lesson Item */
+.lesson-item {
+    padding: 15px;
+    margin-bottom: 10px;
+    background: var(--bg-color);
+}
+.lesson-item .form-group {
+    margin-bottom: 0;
+}
+
+/* Table Actions */
+.table .btn {
+    margin-right: 5px;
+}
+
+/* Quick Actions */
+.card .btn {
+    margin-bottom: 10px;
+}
+
+/* Page Header with Float */
+.page-header {
+    margin-bottom: 20px;
+}
+.page-header::after {
+    content: "";
+    display: table;
+    clear: both;
+}
+.page-header h1 {
+    float: left;
+}
+.page-header .btn {
+    float: right;
+}
+
+/* Status Badge */
+.status-draft {
+    color: var(--text-muted);
+    font-style: italic;
+}
+.status-approved {
+    color: var(--success-color);
+    font-weight: 500;
+}
+
+/* Feedback Items */
+.feedback-item {
+    background: var(--bg-color);
+    padding: 15px;
+    border-radius: var(--radius);
+    margin-bottom: 10px;
+    border-left: 3px solid var(--primary-color);
+}

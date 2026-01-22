@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>HTML Files Overview - PromisEd</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      body {
+        font-family:
+          system-ui,
+          -apple-system,
+          Segoe UI,
+          Roboto,
+          Arial;
+        line-height: 1.5;
+        margin: 24px;
+        color: #111;
+      }
+      h1 {
+        font-size: 1.6rem;
+      }
+      h2 {
+        margin-top: 18px;
+      }
+      code {
+        background: #f6f8fa;
+        padding: 2px 6px;
+        border-radius: 4px;
+      }
+      .note {
+        color: #065f46;
+        background: #ecfdf5;
+        padding: 8px;
+        border-radius: 6px;
+        margin: 10px 0;
+      }
+      .empty {
+        color: #9ca3af;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>📄 HTML Files Overview</h1>
+    <p class="note">
+      This file lists every HTML page in the project and explains its purpose
+      and main areas. Duplicate copies exist under the
+      <code>PromisEd/</code> folder — consider consolidating them.
+    </p>
+
+    <h2>Top-level pages</h2>
+    <ul>
+      <li>
+        <code>index.html</code> — Landing / marketing page. Contains a Hero
+        section, "Featured Courses" area (renders approved courses from the
+        client DB), and site features. Useful as the main entry point for
+        visitors.
+      </li>
+      <li>
+        <code>login.html</code> — Sign-in page. Includes an email/password form
+        and client-side redirect logic (redirects logged-in users to
+        admin/student dashboards). Calls <code>DB.users.login()</code>.
+      </li>
+      <li>
+        <code>register.html</code> — Account creation page. Built-in browser
+        validation and password confirmation; calls
+        <code>DB.users.register()</code> and redirects to
+        <code>login.html</code> after success.
+      </li>
+    </ul>
+
+    <h2>Admin pages (under <code>admin/</code>)</h2>
+    <ul>
+      <li>
+        <code>dashboard.html</code> — Admin dashboard (placeholder / currently
+        empty).
+      </li>
+      <li>
+        <code>courses.html</code> — Course management listing (edit, approve,
+        remove courses).
+      </li>
+      <li>
+        <code>course_editor.html</code> — Create / edit course form (title,
+        price, lessons).
+      </li>
+      <li>
+        <code>categories.html</code> — Manage course categories and taxonomy.
+      </li>
+      <li>
+        <code>students.html</code>, <code>student_details.html</code>,
+        <code>student_progress.html</code>, <code>student_certs.html</code> —
+        Student management and reporting pages.
+      </li>
+    </ul>
+
+    <h2>Student pages (under <code>student/</code>)</h2>
+    <ul>
+      <li>
+        <code>catalog.html</code> — Course catalog with filters and pagination.
+      </li>
+      <li>
+        <code>course_details.html</code> — Course detail page (lessons, author,
+        enroll button).
+      </li>
+      <li>
+        <code>course_player.html</code> — Course player (currently a
+        placeholder).
+      </li>
+      <li>
+        <code>checkout.html</code> — Checkout and payment flow for paid courses.
+      </li>
+      <li>
+        <code>certificate.html</code> — Shows earned certificate for completed
+        courses.
+      </li>
+      <li>
+        <code>dashboard.html</code> — Student dashboard summarizing progress and
+        enrolled courses.
+      </li>
+      <li><code>feedback.html</code> — Submit course feedback.</li>
+      <li><code>wishlist.html</code> — User wishlist for courses.</li>
+    </ul>
+
+    <h2>Notes & Recommendations</h2>
+    <ul>
+      <li class="empty">
+        Several pages are currently empty placeholders (e.g., admin dashboard
+        and the course player). Marked as <em>placeholder</em> above.
+      </li>
+      <li>
+        Consider standardizing page templates (header/footer/nav) and
+        consolidating duplicate copies under <code>PromisEd/</code> to avoid
+        drift.
+      </li>
+    </ul>
+  </body>
+</html>
