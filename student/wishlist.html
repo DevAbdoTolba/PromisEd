@@ -1,147 +1,181 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Your saved courses wishlist">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Your saved courses wishlist" />
     <title>My Wishlist - PromisEd</title>
-    <link rel="stylesheet" href="../css/global.css">
-    <link rel="stylesheet" href="../css/student.css">
-</head>
-<body>
+    <link rel="stylesheet" href="../css/global.css" />
+    <link rel="stylesheet" href="../css/student.css" />
+  </head>
+  <body>
     <script src="../js/storage.js"></script>
     <script src="../js/navbar.js"></script>
 
     <div class="container mt-3">
-        <h1>My Wishlist</h1>
-        <p class="text-muted mb-2">Courses you're interested in</p>
+      <h1>My Wishlist</h1>
+      <p class="text-muted mb-2">Courses you're interested in</p>
 
-        <div id="wishlist-grid" class="wishlist-grid clearfix"></div>
-        
-        <div id="empty-state" class="empty-state hidden">
-            <div class="empty-icon">💔</div>
-            <h3>No courses saved yet</h3>
-            <p class="text-muted">Browse our catalog and save courses you like!</p>
-            <a href="catalog.html" class="btn btn-primary mt-2">Browse Catalog</a>
-        </div>
+      <div id="wishlist-grid" class="wishlist-grid clearfix"></div>
+
+      <div id="empty-state" class="empty-state hidden">
+        <div class="empty-icon">💔</div>
+        <h3>No courses saved yet</h3>
+        <p class="text-muted">Browse our catalog and save courses you like!</p>
+        <a href="catalog.html" class="btn btn-primary mt-2">Browse Catalog</a>
+      </div>
     </div>
 
     <style>
-        .wishlist-grid {
-            margin: 0 -10px;
-        }
+      .wishlist-grid {
+        margin: 0 -10px;
+      }
+      .wishlist-grid .col {
+        padding: 0 10px;
+        margin-bottom: 20px;
+      }
+      .wishlist-card {
+        background: var(--bg-white);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        padding: 20px;
+        position: relative;
+      }
+      .wishlist-card h3 {
+        margin-bottom: 10px;
+        padding-right: 30px;
+      }
+      .remove-btn {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        opacity: 0.5;
+        transition: opacity 0.2s;
+      }
+      .remove-btn:hover {
+        opacity: 1;
+        color: var(--danger-color);
+      }
+      .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+      }
+      .empty-icon {
+        font-size: 4rem;
+        margin-bottom: 20px;
+      }
+      /* Responsive */
+      @media (max-width: 768px) {
         .wishlist-grid .col {
-            padding: 0 10px;
-            margin-bottom: 20px;
+          width: 100%;
         }
-        .wishlist-card {
-            background: var(--bg-white);
-            border-radius: var(--radius);
-            box-shadow: var(--shadow);
-            padding: 20px;
-            position: relative;
-        }
-        .wishlist-card h3 {
-            margin-bottom: 10px;
-            padding-right: 30px;
-        }
-        .remove-btn {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            cursor: pointer;
-            opacity: 0.5;
-            transition: opacity 0.2s;
-        }
-        .remove-btn:hover {
-            opacity: 1;
-            color: var(--danger-color);
-        }
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-        }
-        .empty-icon {
-            font-size: 4rem;
-            margin-bottom: 20px;
-        }
-        /* Responsive */
-        @media (max-width: 768px) {
-            .wishlist-grid .col { width: 100%; }
-        }
+      }
     </style>
 
     <script>
-        (function() {
-            var user = DB.users.getLoggedIn();
-            if (!user) {
-                window.location.href = '../login.html';
-                return;
-            }
+      (function () {
+        var user = DB.users.getLoggedIn();
+        if (!user) {
+          window.location.href = "../login.html";
+          return;
+        }
 
-            var courses = DB.courses.getAll();
-            var grid = document.getElementById('wishlist-grid');
-            var emptyState = document.getElementById('empty-state');
+        var courses = DB.courses.getAll();
+        var grid = document.getElementById("wishlist-grid");
+        var emptyState = document.getElementById("empty-state");
 
-            function saveUser(updatedUser) {
-                var users = DB.users.getAll();
-                var idx = users.findIndex(function(u) { return u.id === updatedUser.id; });
-                if (idx !== -1) {
-                    users[idx] = updatedUser;
-                    localStorage.setItem('users', JSON.stringify(users));
-                    // Update session
-                    localStorage.setItem('current_user', JSON.stringify(updatedUser));
-                }
-            }
+        function saveUser(updatedUser) {
+          var users = DB.users.getAll();
+          var idx = users.findIndex(function (u) {
+            return u.id === updatedUser.id;
+          });
+          if (idx !== -1) {
+            users[idx] = updatedUser;
+            localStorage.setItem("users", JSON.stringify(users));
+            // Update session
+            localStorage.setItem("current_user", JSON.stringify(updatedUser));
+          }
+        }
 
-            function renderWishlist() {
-                // Re-fetch user to get latest wishlist
-                user = DB.users.getLoggedIn();
-                var wishlist = user.wishlist || [];
-                
-                grid.innerHTML = '';
+        function renderWishlist() {
+          // Re-fetch user to get latest wishlist
+          user = DB.users.getLoggedIn();
+          var wishlist = user.wishlist || [];
 
-                if (wishlist.length === 0) {
-                    emptyState.classList.remove('hidden');
-                    return;
-                }
+          grid.innerHTML = "";
 
-                emptyState.classList.add('hidden');
+          if (wishlist.length === 0) {
+            emptyState.classList.remove("hidden");
+            return;
+          }
 
-                wishlist.forEach(function(courseId) {
-                    var course = courses.find(function(c) { return c.id == courseId; });
-                    if (!course) return;
+          emptyState.classList.add("hidden");
 
-                    var card = document.createElement('div');
-                    card.className = 'col col-4';
-                    card.innerHTML = 
-                        '<div class="wishlist-card">' +
-                            '<button class="remove-btn" data-id="' + course.id + '" title="Remove from wishlist">❤️</button>' +
-                            '<h3>' + course.title + '</h3>' +
-                            '<p class="text-muted">' + (course.lessons ? course.lessons.length : 0) + ' lessons</p>' +
-                            '<p class="catalog-price">' + (course.price > 0 ? '$' + course.price : 'Free') + '</p>' +
-                            '<a href="course_details.html?id=' + course.id + '" class="btn btn-outline" style="margin-right:5px;">View</a>' +
-                            '<a href="checkout.html?course=' + course.id + '" class="btn btn-primary">Enroll</a>' +
-                        '</div>';
-                    grid.appendChild(card);
-                });
+          wishlist.forEach(function (courseId) {
+            var course = courses.find(function (c) {
+              return c.id == courseId;
+            });
+            if (!course) return;
 
-                // Attach remove handlers
-                document.querySelectorAll('.remove-btn').forEach(function(btn) {
-                    btn.addEventListener('click', function() {
-                        var courseId = parseInt(this.dataset.id);
-                        user.wishlist = user.wishlist.filter(function(id) { return id !== courseId; });
-                        saveUser(user);
-                        renderWishlist();
-                    });
-                });
-            }
+            // Check if already enrolled
+            var isEnrolled =
+              user.enrolledCourses &&
+              user.enrolledCourses.find(function (e) {
+                return e.courseId == course.id;
+              });
 
-            renderWishlist();
-        })();
+            var card = document.createElement("div");
+            card.className = "col col-4";
+
+            var enrollButton = isEnrolled
+              ? '<a href="course_player.html?id=' +
+                course.id +
+                '" class="btn btn-success">Continue Learning</a>'
+              : '<a href="checkout.html?course=' +
+                course.id +
+                '" class="btn btn-primary">Enroll</a>';
+
+            card.innerHTML =
+              '<div class="wishlist-card">' +
+              '<button class="remove-btn" data-id="' +
+              course.id +
+              '" title="Remove from wishlist">❤️</button>' +
+              "<h3>" +
+              course.title +
+              "</h3>" +
+              '<p class="text-muted">' +
+              (course.lessons ? course.lessons.length : 0) +
+              " lessons</p>" +
+              '<p class="catalog-price">' +
+              (course.price > 0 ? "$" + course.price : "Free") +
+              "</p>" +
+              '<a href="course_details.html?id=' +
+              course.id +
+              '" class="btn btn-outline" style="margin-right:5px;">View</a>' +
+              enrollButton +
+              "</div>";
+            grid.appendChild(card);
+          });
+
+          // Attach remove handlers
+          document.querySelectorAll(".remove-btn").forEach(function (btn) {
+            btn.addEventListener("click", function () {
+              var courseId = parseInt(this.dataset.id);
+              user.wishlist = user.wishlist.filter(function (id) {
+                return id !== courseId;
+              });
+              saveUser(user);
+              renderWishlist();
+            });
+          });
+        }
+
+        renderWishlist();
+      })();
     </script>
-</body>
+  </body>
 </html>
